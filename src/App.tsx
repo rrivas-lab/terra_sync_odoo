@@ -973,9 +973,15 @@ const OperationView = ({
   const [showObservations, setShowObservations] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
+  const [showImageSourceSelector, setShowImageSourceSelector] = useState(false);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [pendingImageNote, setPendingImageNote] = useState('');
   const [zoomedImage, setZoomedImage] = useState<VehicleImage | null>(null);
   const [tempNote, setTempNote] = useState(selectedVehicle.observaciones);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  const isCompleted = selectedVehicle.estado === 'completado';
 
   useEffect(() => {
     if (showObservations) {
@@ -1015,23 +1021,31 @@ const OperationView = ({
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      const newImg: VehicleImage = {
-        id: Math.random().toString(36).substr(2, 9),
-        url: reader.result as string,
-        nota: '',
-        timestamp: new Date().toLocaleString()
-      };
-      
-      const updated = {
-        ...selectedVehicle,
-        imagenes: [...selectedVehicle.imagenes, newImg]
-      };
-      
-      setSelectedVehicle(updated);
-      setVehicles((prev: any) => prev.map((v: any) => v.id === selectedVehicle.id ? updated : v));
+      setPendingImage(reader.result as string);
+      setPendingImageNote('');
     };
     reader.readAsDataURL(file);
     e.target.value = ''; // Reset input
+  };
+
+  const savePendingImage = () => {
+    if (!pendingImage) return;
+    const newImg: VehicleImage = {
+      id: Math.random().toString(36).substr(2, 9),
+      url: pendingImage,
+      nota: pendingImageNote,
+      timestamp: new Date().toLocaleString()
+    };
+    
+    const updated = {
+      ...selectedVehicle,
+      imagenes: [...selectedVehicle.imagenes, newImg]
+    };
+    
+    setSelectedVehicle(updated);
+    setVehicles((prev: any) => prev.map((v: any) => v.id === selectedVehicle.id ? updated : v));
+    setPendingImage(null);
+    setPendingImageNote('');
   };
 
   const deleteImage = (id: string) => {
@@ -1051,8 +1065,6 @@ const OperationView = ({
     setSelectedVehicle(updated);
     setVehicles((prev: any) => prev.map((v: any) => v.id === selectedVehicle.id ? updated : v));
   };
-
-  const isCompleted = selectedVehicle.estado === 'completado';
 
   return (
     <div className="fixed inset-0 flex flex-col bg-black overflow-hidden z-40">
@@ -1220,7 +1232,7 @@ const OperationView = ({
           <div className="w-full max-w-[320px] mt-2">
             <PhotoGallery 
               images={selectedVehicle.imagenes}
-              onAdd={() => fileInputRef.current?.click()}
+              onAdd={() => setShowImageSourceSelector(true)}
               onViewAll={() => setShowGallery(true)}
               onZoom={(img) => setZoomedImage(img)}
               isCompleted={isCompleted}
@@ -1229,7 +1241,15 @@ const OperationView = ({
           
           <input 
             type="file"
-            ref={fileInputRef}
+            ref={cameraInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+          />
+          <input 
+            type="file"
+            ref={galleryInputRef}
             onChange={handleFileChange}
             accept="image/*"
             className="hidden"
@@ -1362,12 +1382,101 @@ const OperationView = ({
           <ImageGalleryWizard 
             images={selectedVehicle.imagenes}
             onClose={() => setShowGallery(false)}
-            onAdd={() => fileInputRef.current?.click()}
+            onAdd={() => setShowImageSourceSelector(true)}
             onDelete={deleteImage}
             onUpdateNote={updateImageNote}
             onZoom={(img) => setZoomedImage(img)}
             isCompleted={isCompleted}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Image Source Selector Modal */}
+      <AnimatePresence>
+        {showImageSourceSelector && (
+          <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/80 backdrop-blur-sm p-4 pb-8" onClick={() => setShowImageSourceSelector(false)}>
+            <motion.div 
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-w-md bg-[#1A1A1A] rounded-3xl p-6 flex flex-col gap-4 border border-white/10 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-2" />
+              <h3 className="text-sm font-bold uppercase tracking-widest text-white/80 text-center mb-2">Agregar Imagen</h3>
+              
+              <button 
+                onClick={() => { setShowImageSourceSelector(false); cameraInputRef.current?.click(); }}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
+              >
+                <div className="w-12 h-12 rounded-full bg-[#FF8C00]/20 flex items-center justify-center text-[#FF8C00]">
+                  <Camera className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-bold text-white">Tomar Foto</span>
+                  <span className="text-[10px] text-white/50 uppercase tracking-wider">Usar la cámara del dispositivo</span>
+                </div>
+              </button>
+
+              <button 
+                onClick={() => { setShowImageSourceSelector(false); galleryInputRef.current?.click(); }}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
+              >
+                <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500">
+                  <ImageIcon className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-bold text-white">Subir Archivo</span>
+                  <span className="text-[10px] text-white/50 uppercase tracking-wider">Elegir de la galería</span>
+                </div>
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Image Capture Modal (Note Prompt) */}
+      <AnimatePresence>
+        {pendingImage && (
+          <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/95 p-4 md:p-8 backdrop-blur-md">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-lg bg-[#0D0D0D] rounded-[2.5rem] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,1)] flex flex-col overflow-hidden"
+            >
+              <div className="p-6 border-b border-white/5 flex justify-between items-center">
+                <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#FF8C00]">Confirmar Imagen</h3>
+                <button onClick={() => setPendingImage(null)} className="p-2 text-white/50 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="p-6 flex flex-col gap-6">
+                <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden border border-white/5 flex items-center justify-center">
+                  <img src={pendingImage} alt="Preview" className="max-w-full max-h-full object-contain" />
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-white/50 ml-2">Nota de la imagen (Opcional)</label>
+                  <textarea 
+                    value={pendingImageNote}
+                    onChange={(e) => setPendingImageNote(e.target.value)}
+                    placeholder="Ej. Sello de seguridad roto..."
+                    className="w-full h-24 bg-white/5 border border-white/10 rounded-2xl p-4 text-sm text-white placeholder:text-white/20 outline-none focus:border-[#FF8C00]/50 transition-colors resize-none"
+                  />
+                </div>
+                
+                <button 
+                  onClick={savePendingImage}
+                  className="w-full py-4 rounded-xl bg-[#FF8C00] text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-[#FF8C00]/90 transition-all shadow-[0_10px_30px_rgba(255,140,0,0.2)]"
+                >
+                  Guardar Imagen
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
