@@ -23,7 +23,9 @@ import {
   Camera,
   Image as ImageIcon,
   Maximize2,
-  Trash2
+  Trash2,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -62,6 +64,9 @@ interface Vehicle {
   proveedor: string;
   compra: string;
   picking: string;
+  finca?: string;
+  semillero?: string;
+  despachador?: string;
   estado: 'borrador' | 'espera' | 'completado';
   costales: number;
   semillas_x_costal: number;
@@ -91,6 +96,9 @@ const MOCK_COMPRAS: Record<string, string[]> = {
   'Semillas del Norte': ['PO-2024-003', 'PO-2024-009', 'PO-2024-015'],
   'BioPlantas': ['PO-2024-004', 'PO-2024-010']
 };
+const MOCK_FINCAS = ['Hacienda Puricaure', 'Hacienda El Paraíso', 'Finca La Esperanza', 'Finca San José'];
+const MOCK_SEMILLEROS = ['1', '2', '3', '4', '5', '6'];
+const MOCK_DESPACHADORES = ['Miguel Ángel', 'Roberto Carlos', 'Ana María', 'Luis Fernando'];
 
 // --- Components ---
 
@@ -392,7 +400,7 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle }: {
   }, [filterStage, filterDate, searchTerm]);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12">
+    <div className="max-w-6xl mx-auto space-y-12 pb-24">
       <div className="flex items-end justify-between px-2">
         <div className="space-y-1">
           <h1 className="text-4xl font-light tracking-tight text-[#FF8C00]">Registro de Semilla</h1>
@@ -520,10 +528,17 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle }: {
                   className="group hover:bg-white/[0.02] cursor-pointer transition-colors"
                 >
                   <td className="px-8 py-6">
-                    <span className="text-lg font-medium text-[#FF8C00] block">{v.chofer || '---'}</span>
-                    <span className="text-[10px] text-white/50 uppercase tracking-widest">
-                      {v.estado === 'completado' ? `Finalizado: ${v.fecha_finalizacion}` : `Creado: ${v.fecha_creacion}`}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">{v.id}</span>
+                      <span className="text-lg font-medium text-[#FF8C00] block truncate max-w-[200px]">
+                        {v.transbordos && v.transbordos.length > 0 
+                          ? v.transbordos[v.transbordos.length - 1].chofer_nuevo 
+                          : v.chofer || '---'}
+                      </span>
+                      <span className="text-[10px] text-white/50 uppercase tracking-widest">
+                        {v.estado === 'completado' ? `Finalizado: ${v.fecha_finalizacion}` : `Creado: ${v.fecha_creacion}`}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-8 py-6">
                     <span className="text-sm font-normal text-white/60">{v.proveedor || '---'}</span>
@@ -559,20 +574,22 @@ const FormView = ({
   setView, 
   setSelectedVehicle, 
   onConfirmRegistration,
-  computedPicking
+  computedPicking,
+  setIsSigning
 }: { 
   selectedVehicle: Vehicle | null, 
   setView: (v: any) => void, 
   setSelectedVehicle: (v: any) => void,
   onConfirmRegistration: () => void,
-  computedPicking: string
+  computedPicking: string,
+  setIsSigning: (v: boolean) => void
 }) => {
   if (!selectedVehicle) return null;
   const isLocked = selectedVehicle.estado !== 'borrador';
   const isPickingOccupied = selectedVehicle.proveedor === 'Semillas del Norte';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-8">
+    <div className="max-w-4xl mx-auto space-y-6 pb-24">
       <div className="flex items-center justify-between px-2">
         <button onClick={() => setView('list')} className="flex items-center gap-4 text-white/40 hover:text-[#FF8C00] transition-colors group">
           <ArrowLeft className="w-5 h-5" />
@@ -614,6 +631,30 @@ const FormView = ({
             value={selectedVehicle.compra}
             onChange={(e: any) => setSelectedVehicle({...selectedVehicle, compra: e.target.value})}
             disabled={isLocked || !selectedVehicle.proveedor}
+          />
+          <ElevatedSelect 
+            label="Finca" 
+            icon={MapPin}
+            options={MOCK_FINCAS}
+            value={selectedVehicle.finca || ''}
+            onChange={(e: any) => setSelectedVehicle({...selectedVehicle, finca: e.target.value})}
+            disabled={isLocked}
+          />
+          <ElevatedSelect 
+            label="Semillero" 
+            icon={Package}
+            options={MOCK_SEMILLEROS}
+            value={selectedVehicle.semillero || ''}
+            onChange={(e: any) => setSelectedVehicle({...selectedVehicle, semillero: e.target.value})}
+            disabled={isLocked}
+          />
+          <ElevatedSelect 
+            label="Despachador" 
+            icon={UserCheck}
+            options={MOCK_DESPACHADORES}
+            value={selectedVehicle.despachador || ''}
+            onChange={(e: any) => setSelectedVehicle({...selectedVehicle, despachador: e.target.value})}
+            disabled={isLocked}
           />
           
           <div className="space-y-2">
@@ -697,6 +738,63 @@ const FormView = ({
             </button>
           ) : (
             <div className="flex flex-col gap-6">
+              {selectedVehicle.estado === 'completado' && (
+                <div className="bg-black/40 border border-white/5 rounded-2xl p-6 md:p-8 space-y-6 shadow-inner">
+                  <div className="flex items-center gap-4 border-b border-white/5 pb-4">
+                    <Calculator className="w-5 h-5 text-[#FF8C00]/60" />
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-[#FF8C00]">Resumen de Operación</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/50 mb-1">Costales Recibidos</p>
+                      <p className="text-3xl font-light text-white/90">{selectedVehicle.costales}</p>
+                    </div>
+                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/50 mb-1">Semillas x Costal</p>
+                      <p className="text-3xl font-light text-white/90">{selectedVehicle.semillas_x_costal}</p>
+                    </div>
+                    <div className="col-span-2 md:col-span-1 bg-[#FF8C00]/5 border border-[#FF8C00]/20 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#FF8C00]/60 mb-1">Total Semillas</p>
+                      <p className="text-3xl font-medium text-[#FF8C00]">{(selectedVehicle.costales * selectedVehicle.semillas_x_costal).toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {selectedVehicle.transbordos && selectedVehicle.transbordos.length > 0 && (
+                    <div className="pt-6 border-t border-white/5">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Truck className="w-4 h-4 text-[#FF8C00]/60" />
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-white/70">Historial de Transbordos</h4>
+                      </div>
+                      <div className="space-y-3">
+                        {selectedVehicle.transbordos.map((t, i) => (
+                          <div key={t.id} className="flex flex-col md:flex-row md:items-center justify-between bg-white/[0.02] p-4 rounded-xl border border-white/5 gap-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40 font-bold text-xs">
+                                {i + 1}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-white/80 flex items-center gap-2 flex-wrap">
+                                  {t.chofer_anterior} 
+                                  <ChevronRight className="w-3 h-3 text-[#FF8C00]" /> 
+                                  <span className="text-[#FF8C00]">{t.chofer_nuevo}</span>
+                                </p>
+                                <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">{new Date(t.timestamp).toLocaleString()}</p>
+                              </div>
+                            </div>
+                            {t.firma && (
+                              <div className="shrink-0 bg-white/[0.02] rounded-lg p-2 border border-white/5">
+                                <img src={t.firma} alt="Firma" className="h-8 object-contain opacity-80" style={{ filter: 'hue-rotate(15deg) saturate(200%) brightness(150%)' }} />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="w-full bg-white/[0.02] border border-white/5 rounded-lg py-4 px-6 flex items-center gap-4">
                 <CheckCircle2 className={cn(
                   "w-5 h-5",
@@ -722,13 +820,22 @@ const FormView = ({
                 </button>
               )}
               {selectedVehicle.estado === 'completado' && (
-                <button 
-                  onClick={() => setView('operation')}
-                  className="w-full bg-white/5 text-white/60 py-5 rounded-lg font-bold text-lg shadow-xl hover:bg-white/10 transition-all flex items-center justify-center gap-4 uppercase tracking-widest border border-white/5"
-                >
-                  <History className="w-6 h-6" />
-                  Ver Resumen
-                </button>
+                <div className="grid grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => setView('operation')}
+                    className="w-full bg-white/5 text-white/60 py-4 rounded-lg font-bold text-sm shadow-xl hover:bg-white/10 transition-all flex items-center justify-center gap-3 uppercase tracking-widest border border-white/5"
+                  >
+                    <History className="w-5 h-5" />
+                    Ver Resumen
+                  </button>
+                  <button 
+                    onClick={() => setIsSigning(true)}
+                    className="w-full bg-[#FF8C00]/10 text-[#FF8C00] py-4 rounded-lg font-bold text-sm shadow-xl hover:bg-[#FF8C00]/20 transition-all flex items-center justify-center gap-3 uppercase tracking-widest border border-[#FF8C00]/20"
+                  >
+                    <Truck className="w-5 h-5" />
+                    Transbordo
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -1180,22 +1287,26 @@ const OperationView = ({
           </div>
 
           {/* 4. Botones de Acción: Fila inferior equilibrada */}
-          <div className="w-full grid grid-cols-3 gap-2">
+          <div className={cn(
+            "w-full grid gap-2",
+            isCompleted ? "grid-cols-3" : "grid-cols-2"
+          )}>
             <button 
               onClick={() => setShowObservations(true)}
               className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-white/[0.01] border border-white/5 text-white/60 hover:text-[#FF8C00] hover:border-[#FF8C00]/20 hover:bg-[#FF8C00]/[0.02] transition-all group"
             >
               <ClipboardList className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="text-[7px] font-bold uppercase tracking-[0.1em]">{isCompleted ? 'Nota' : 'Nota'}</span>
+              <span className="text-[7px] font-bold uppercase tracking-[0.1em]">Nota</span>
             </button>
-            <button 
-              onClick={() => setIsSigning(true)}
-              disabled={isCompleted}
-              className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-white/[0.01] border border-white/5 text-white/60 hover:text-[#FF8C00] hover:border-[#FF8C00]/20 hover:bg-[#FF8C00]/[0.02] transition-all group disabled:opacity-30 disabled:grayscale"
-            >
-              <Truck className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="text-[7px] font-bold uppercase tracking-[0.1em]">Transbordo</span>
-            </button>
+            {isCompleted && (
+              <button 
+                onClick={() => setIsSigning(true)}
+                className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-white/[0.01] border border-white/5 text-white/60 hover:text-[#FF8C00] hover:border-[#FF8C00]/20 hover:bg-[#FF8C00]/[0.02] transition-all group"
+              >
+                <Truck className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span className="text-[7px] font-bold uppercase tracking-[0.1em]">Transbordo</span>
+              </button>
+            )}
             <button 
               onClick={() => setShowHistory(true)}
               className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-white/[0.01] border border-white/5 text-white/60 hover:text-[#FF8C00] hover:border-[#FF8C00]/20 hover:bg-[#FF8C00]/[0.02] transition-all group"
@@ -1207,7 +1318,7 @@ const OperationView = ({
         </div>
 
         {/* Finalize Action */}
-        <div className="mt-4 md:mt-6 flex flex-col items-center gap-4 pb-4">
+        <div className="mt-4 md:mt-6 flex flex-col items-center gap-4 pb-24">
           <div className="flex flex-col items-center">
             <span className="text-[7px] md:text-[9px] font-bold uppercase tracking-[0.4em] text-white/40 mb-1">Total Computado</span>
             <div className="flex items-baseline gap-2">
@@ -1495,13 +1606,17 @@ const OperationView = ({
 
 export default function App() {
   const [view, setView] = useState<'list' | 'form' | 'operation'>('list');
+  const [isOnline, setIsOnline] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([
     {
-      id: 'REC-001',
+      id: 'HPR-FO-PRO-001',
       chofer: 'Juan Pérez',
       proveedor: 'AgroPiña S.A.',
       compra: 'PO-2024-001',
       picking: 'WH/IN/00123',
+      finca: 'Hacienda Puricaure',
+      semillero: '1',
+      despachador: 'Miguel Ángel',
       estado: 'espera',
       costales: 120,
       semillas_x_costal: 45,
@@ -1513,11 +1628,14 @@ export default function App() {
       fecha_creacion: '2024-03-15'
     },
     {
-      id: 'REC-002',
+      id: 'HPR-FO-PRO-002',
       chofer: 'Carlos Rodríguez',
       proveedor: 'Frutas del Valle',
       compra: 'PO-2024-002',
       picking: 'WH/IN/00124',
+      finca: 'Hacienda El Paraíso',
+      semillero: '3',
+      despachador: 'Roberto Carlos',
       estado: 'borrador',
       costales: 0,
       semillas_x_costal: 0,
@@ -1529,11 +1647,14 @@ export default function App() {
       fecha_creacion: '2024-03-16'
     },
     {
-      id: 'REC-003',
+      id: 'HPR-FO-PRO-003',
       chofer: 'Mario Castañeda',
       proveedor: 'Semillas del Norte',
       compra: 'PO-2024-003',
       picking: 'WH/IN/00125',
+      finca: 'Finca La Esperanza',
+      semillero: '5',
+      despachador: 'Ana María',
       estado: 'completado',
       costales: 100,
       semillas_x_costal: 50,
@@ -1552,12 +1673,16 @@ export default function App() {
   // --- Handlers ---
 
   const handleNewVehicle = () => {
+    const newId = `HPR-FO-PRO-${(vehicles.length + 1).toString().padStart(3, '0')}`;
     const newVehicle: Vehicle = {
-      id: `REC-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      id: newId,
       chofer: '',
       proveedor: '',
       compra: '',
       picking: '',
+      finca: '',
+      semillero: '',
+      despachador: '',
       estado: 'borrador',
       costales: 0,
       semillas_x_costal: 0,
@@ -1644,6 +1769,19 @@ export default function App() {
     <div className="h-screen bg-black text-[#FF8C00] font-sans selection:bg-[#FF8C00] selection:text-black overflow-hidden flex flex-col">
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,#FF8C0010,transparent_50%)] pointer-events-none" />
       
+      <button
+        onClick={() => setIsOnline(!isOnline)}
+        className={cn(
+          "fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all shadow-2xl border backdrop-blur-md",
+          isOnline 
+            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20 shadow-emerald-500/5" 
+            : "bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20 shadow-red-500/5"
+        )}
+      >
+        {isOnline ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+        <span>{isOnline ? 'Online' : 'Offline'}</span>
+      </button>
+
       <main className="flex-1 overflow-y-auto custom-scrollbar relative z-10 p-4 md:p-8 lg:p-12">
         <AnimatePresence mode="wait">
           <motion.div
@@ -1668,6 +1806,7 @@ export default function App() {
                 setSelectedVehicle={setSelectedVehicle} 
                 onConfirmRegistration={handleConfirmRegistration}
                 computedPicking={computedPicking}
+                setIsSigning={setIsSigning}
               />
             )}
             {view === 'operation' && (
@@ -1690,7 +1829,11 @@ export default function App() {
         <TransbordoWizard 
           onSave={handleAddTransbordo}
           onCancel={() => setIsSigning(false)}
-          currentDriver={selectedVehicle?.chofer || ''}
+          currentDriver={
+            selectedVehicle?.transbordos && selectedVehicle.transbordos.length > 0 
+              ? selectedVehicle.transbordos[selectedVehicle.transbordos.length - 1].chofer_nuevo 
+              : selectedVehicle?.chofer || ''
+          }
         />
       )}
 
