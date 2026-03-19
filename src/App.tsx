@@ -19,7 +19,11 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
-  Signature
+  Signature,
+  Camera,
+  Image as ImageIcon,
+  Maximize2,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -45,6 +49,13 @@ interface Observation {
   timestamp: string;
 }
 
+interface VehicleImage {
+  id: string;
+  url: string;
+  nota: string;
+  timestamp: string;
+}
+
 interface Vehicle {
   id: string;
   chofer: string;
@@ -58,6 +69,7 @@ interface Vehicle {
   observaciones: string;
   historial_observaciones: Observation[];
   transbordos: Transbordo[];
+  imagenes: VehicleImage[];
   fecha_creacion: string;
   fecha_finalizacion?: string;
 }
@@ -726,6 +738,218 @@ const FormView = ({
   );
 };
 
+const PhotoGallery = ({ 
+  images, 
+  onAdd, 
+  onViewAll, 
+  onZoom, 
+  isCompleted 
+}: { 
+  images: VehicleImage[], 
+  onAdd: () => void, 
+  onViewAll: () => void, 
+  onZoom: (img: VehicleImage) => void,
+  isCompleted: boolean
+}) => {
+  const maxVisible = 3;
+  const visibleImages = images.slice(0, maxVisible);
+  const hasMore = images.length > maxVisible;
+
+  return (
+    <div className="w-full mt-4 bg-black/20 rounded-2xl p-3 border border-white/5">
+      <div className="flex items-center justify-between mb-3 px-1">
+        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Evidencia Fotográfica</span>
+        {!isCompleted && (
+          <button 
+            onClick={onAdd}
+            className="p-1.5 rounded-lg bg-[#FF8C00]/10 text-[#FF8C00] hover:bg-[#FF8C00]/20 transition-all"
+          >
+            <Camera className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+      
+      <div className="flex gap-2 h-20">
+        {images.length > 0 ? (
+          visibleImages.map((img, idx) => (
+            <div 
+              key={img.id}
+              onClick={() => (idx === maxVisible - 1 && hasMore) ? onViewAll() : onZoom(img)}
+              className="relative flex-1 rounded-xl overflow-hidden cursor-pointer group border border-white/5"
+            >
+              <img 
+                src={img.url} 
+                alt={`Evidencia ${idx}`} 
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                referrerPolicy="no-referrer"
+              />
+              {idx === maxVisible - 1 && hasMore && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
+                  <span className="text-sm font-black text-white">+{images.length - maxVisible + 1}</span>
+                </div>
+              )}
+              {img.nota && (
+                <div className="absolute bottom-1 right-1 p-0.5 rounded-md bg-black/60">
+                  <ClipboardList className="w-2 h-2 text-[#FF8C00]" />
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <div 
+            onClick={!isCompleted ? onAdd : undefined}
+            className={cn(
+              "flex-1 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-xl bg-white/[0.02] text-white/20 transition-all",
+              !isCompleted && "hover:border-[#FF8C00]/20 hover:bg-[#FF8C00]/[0.02] cursor-pointer"
+            )}
+          >
+            <ImageIcon className="w-5 h-5 mb-1 opacity-50" />
+            <span className="text-[8px] font-bold uppercase tracking-widest">Sin fotos</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const ImageGalleryWizard = ({ 
+  images, 
+  onClose, 
+  onZoom, 
+  onAdd, 
+  onDelete, 
+  onUpdateNote,
+  isCompleted 
+}: { 
+  images: VehicleImage[], 
+  onClose: () => void, 
+  onZoom: (img: VehicleImage) => void,
+  onAdd: () => void,
+  onDelete: (id: string) => void,
+  onUpdateNote: (id: string, note: string) => void,
+  isCompleted: boolean
+}) => {
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 md:p-10">
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="w-full max-w-4xl bg-[#0D0D0D] rounded-[2.5rem] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,1)] flex flex-col max-h-[90vh] overflow-hidden"
+      >
+        <div className="p-6 md:p-8 flex justify-between items-center border-b border-white/5">
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-[#FF8C00]">Galería de Evidencia</h3>
+            <p className="text-[10px] text-white/50 uppercase tracking-widest">{images.length} fotos capturadas</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isCompleted && (
+              <button 
+                onClick={onAdd}
+                className="p-3 bg-[#FF8C00]/10 text-[#FF8C00] rounded-full hover:bg-[#FF8C00]/20 transition-all"
+              >
+                <Camera className="w-5 h-5" />
+              </button>
+            )}
+            <button onClick={onClose} className="p-3 hover:bg-white/5 rounded-full transition-colors text-white/50 hover:text-white">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {images.map((img) => (
+              <div key={img.id} className="bg-black/40 rounded-2xl border border-white/5 overflow-hidden flex flex-col group">
+                <div 
+                  className="aspect-square relative overflow-hidden cursor-zoom-in"
+                  onClick={() => onZoom(img)}
+                >
+                  <img 
+                    src={img.url} 
+                    alt="Evidencia" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {!isCompleted && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onDelete(img.id); }}
+                        className="p-2 bg-red-500/20 text-red-500 rounded-lg backdrop-blur-md hover:bg-red-500 transition-all hover:text-white"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button className="p-2 bg-black/40 text-white rounded-lg backdrop-blur-md">
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] font-bold uppercase tracking-widest text-white/30">{img.timestamp}</span>
+                  </div>
+                  <textarea 
+                    value={img.nota}
+                    onChange={(e) => onUpdateNote(img.id, e.target.value)}
+                    readOnly={isCompleted}
+                    placeholder="Agregar nota..."
+                    className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-[11px] font-medium text-white/70 placeholder:text-white/10 outline-none focus:border-[#FF8C00]/20 transition-all resize-none h-20 custom-scrollbar"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+const ImageZoomModal = ({ 
+  image, 
+  onClose 
+}: { 
+  image: VehicleImage, 
+  onClose: () => void 
+}) => {
+  return (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/98 p-4 md:p-10" onClick={onClose}>
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="relative max-w-5xl w-full h-full flex flex-col items-center justify-center gap-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button 
+          onClick={onClose}
+          className="absolute top-0 right-0 p-4 text-white/40 hover:text-white transition-colors"
+        >
+          <X className="w-8 h-8" />
+        </button>
+        
+        <div className="w-full flex-1 flex items-center justify-center overflow-hidden rounded-3xl border border-white/5 shadow-2xl">
+          <img 
+            src={image.url} 
+            alt="Zoom" 
+            className="max-w-full max-h-full object-contain"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+        
+        {image.nota && (
+          <div className="w-full max-w-2xl bg-[#0D0D0D] p-6 rounded-2xl border border-white/10 shadow-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <ClipboardList className="w-4 h-4 text-[#FF8C00]" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF8C00]">Nota de Imagen</span>
+            </div>
+            <p className="text-sm text-white/80 font-medium leading-relaxed">{image.nota}</p>
+          </div>
+        )}
+      </motion.div>
+    </div>
+  );
+};
+
 const OperationView = ({ 
   selectedVehicle, 
   setView, 
@@ -748,7 +972,10 @@ const OperationView = ({
   if (!selectedVehicle) return null;
   const [showObservations, setShowObservations] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<VehicleImage | null>(null);
   const [tempNote, setTempNote] = useState(selectedVehicle.observaciones);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (showObservations) {
@@ -780,6 +1007,49 @@ const OperationView = ({
     setVehicles((prev: any) => prev.map((v: any) => v.id === selectedVehicle.id ? updated : v));
     setTempNote('');
     setShowObservations(false);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const newImg: VehicleImage = {
+        id: Math.random().toString(36).substr(2, 9),
+        url: reader.result as string,
+        nota: '',
+        timestamp: new Date().toLocaleString()
+      };
+      
+      const updated = {
+        ...selectedVehicle,
+        imagenes: [...selectedVehicle.imagenes, newImg]
+      };
+      
+      setSelectedVehicle(updated);
+      setVehicles((prev: any) => prev.map((v: any) => v.id === selectedVehicle.id ? updated : v));
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // Reset input
+  };
+
+  const deleteImage = (id: string) => {
+    const updated = {
+      ...selectedVehicle,
+      imagenes: selectedVehicle.imagenes.filter(img => img.id !== id)
+    };
+    setSelectedVehicle(updated);
+    setVehicles((prev: any) => prev.map((v: any) => v.id === selectedVehicle.id ? updated : v));
+  };
+
+  const updateImageNote = (id: string, note: string) => {
+    const updated = {
+      ...selectedVehicle,
+      imagenes: selectedVehicle.imagenes.map(img => img.id === id ? { ...img, nota: note } : img)
+    };
+    setSelectedVehicle(updated);
+    setVehicles((prev: any) => prev.map((v: any) => v.id === selectedVehicle.id ? updated : v));
   };
 
   const isCompleted = selectedVehicle.estado === 'completado';
@@ -945,6 +1215,25 @@ const OperationView = ({
               Registro Finalizado
             </div>
           )}
+
+          {/* Photo Gallery Section */}
+          <div className="w-full max-w-[320px] mt-2">
+            <PhotoGallery 
+              images={selectedVehicle.imagenes}
+              onAdd={() => fileInputRef.current?.click()}
+              onViewAll={() => setShowGallery(true)}
+              onZoom={(img) => setZoomedImage(img)}
+              isCompleted={isCompleted}
+            />
+          </div>
+          
+          <input 
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+          />
         </div>
       </main>
 
@@ -1066,6 +1355,31 @@ const OperationView = ({
           </div>
         )}
       </AnimatePresence>
+      
+      {/* Image Gallery Wizard */}
+      <AnimatePresence>
+        {showGallery && (
+          <ImageGalleryWizard 
+            images={selectedVehicle.imagenes}
+            onClose={() => setShowGallery(false)}
+            onAdd={() => fileInputRef.current?.click()}
+            onDelete={deleteImage}
+            onUpdateNote={updateImageNote}
+            onZoom={(img) => setZoomedImage(img)}
+            isCompleted={isCompleted}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Image Zoom Modal */}
+      <AnimatePresence>
+        {zoomedImage && (
+          <ImageZoomModal 
+            image={zoomedImage}
+            onClose={() => setZoomedImage(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -1086,6 +1400,7 @@ export default function App() {
       observaciones: '',
       historial_observaciones: [],
       transbordos: [],
+      imagenes: [],
       fecha_creacion: '2024-03-15'
     },
     {
@@ -1101,6 +1416,7 @@ export default function App() {
       observaciones: '',
       historial_observaciones: [],
       transbordos: [],
+      imagenes: [],
       fecha_creacion: '2024-03-16'
     },
     {
@@ -1116,6 +1432,7 @@ export default function App() {
       observaciones: 'Todo en orden',
       historial_observaciones: [],
       transbordos: [],
+      imagenes: [],
       fecha_creacion: '2024-03-17',
       fecha_finalizacion: '2024-03-18'
     }
@@ -1139,6 +1456,7 @@ export default function App() {
       observaciones: '',
       historial_observaciones: [],
       transbordos: [],
+      imagenes: [],
       fecha_creacion: new Date().toISOString().split('T')[0]
     };
     setSelectedVehicle(newVehicle);
