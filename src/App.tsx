@@ -370,10 +370,11 @@ const ElevatedSelect = ({ label, icon: Icon, value, onChange, options, disabled 
 
 // --- Views ---
 
-const ListView = ({ vehicles, onNewVehicle, onSelectVehicle }: { 
+const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline }: { 
   vehicles: Vehicle[], 
   onNewVehicle: () => void, 
-  onSelectVehicle: (v: Vehicle) => void
+  onSelectVehicle: (v: Vehicle) => void,
+  isOnline: boolean
 }) => {
   const [filterStage, setFilterStage] = useState<string>('todos');
   const [filterDate, setFilterDate] = useState<string>('');
@@ -408,7 +409,14 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle }: {
         </div>
         <button 
           onClick={onNewVehicle}
-          className="bg-[#FF8C00] text-black px-8 py-3 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-[#FF8C00]/90 transition-all uppercase tracking-widest"
+          disabled={!isOnline}
+          title={!isOnline ? "No se pueden registrar nuevas recepciones sin conexión" : ""}
+          className={cn(
+            "px-8 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all uppercase tracking-widest",
+            isOnline 
+              ? "bg-[#FF8C00] text-black hover:bg-[#FF8C00]/90" 
+              : "bg-white/10 text-white/30 cursor-not-allowed"
+          )}
         >
           <Plus className="w-4 h-4" />
           Registrar
@@ -1673,6 +1681,9 @@ export default function App() {
   // --- Handlers ---
 
   const handleNewVehicle = () => {
+    if (!isOnline) {
+      return;
+    }
     const newId = `HPR-FO-PRO-${(vehicles.length + 1).toString().padStart(3, '0')}`;
     const newVehicle: Vehicle = {
       id: newId,
@@ -1797,6 +1808,7 @@ export default function App() {
                 vehicles={vehicles} 
                 onNewVehicle={handleNewVehicle} 
                 onSelectVehicle={handleSelectVehicle} 
+                isOnline={isOnline}
               />
             )}
             {view === 'form' && (
