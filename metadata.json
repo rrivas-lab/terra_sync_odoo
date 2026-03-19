@@ -1,0 +1,5 @@
+{
+  "name": "Seed Reception Manager",
+  "description": "Agricultural seed reception system with calculation tools, transshipment wizard, and signature capture.",
+  "requestFramePermissions": []
+}
