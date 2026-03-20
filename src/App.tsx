@@ -31,7 +31,13 @@ import {
   Tractor,
   Lock,
   Clock,
-  Circle
+  Circle,
+  Play,
+  Square,
+  Wrench,
+  Fuel,
+  Ruler,
+  Save
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -524,12 +530,31 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep') => 
 
 type ActivityState = 'disponible' | 'bloqueado' | 'en_proceso' | 'finalizado';
 
+interface ActivityPhoto {
+  id: string;
+  url: string;
+  timestamp: string;
+  observation: string;
+}
+
 interface Activity {
   id: string;
   name: string;
   state: ActivityState;
   blockedBy?: string;
   startTime?: Date;
+  endTime?: Date;
+  isTimerRunning?: boolean;
+  accessoryChangeStartTime?: Date;
+  accessoryChangeEndTime?: Date;
+  isAccessoryTimerRunning?: boolean;
+  operator?: string;
+  machinery?: string;
+  accessories?: string[];
+  horometerStart?: number;
+  horometerEnd?: number;
+  area?: number;
+  photos?: ActivityPhoto[];
 }
 
 interface PrepTask {
@@ -604,6 +629,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
   const [activities, setActivities] = useState<Activity[]>(
     initialTask?.activities || INITIAL_ACTIVITIES.map(a => ({ ...a }))
   );
+  const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -613,29 +639,11 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
 
   const progress = Math.round((activities.filter(a => a.state === 'finalizado').length / activities.length) * 100);
 
-  const handleActivityAction = (id: string) => {
-    const newActs = [...activities];
-    const idx = newActs.findIndex(a => a.id === id);
-    const act = { ...newActs[idx] };
-
-    if (act.state === 'disponible') {
-      act.state = 'en_proceso';
-      act.startTime = new Date();
-    } else if (act.state === 'en_proceso') {
-      act.state = 'finalizado';
-      // Unlock next activity
-      const nextIdx = newActs.findIndex(a => a.blockedBy === act.name);
-      if (nextIdx !== -1 && newActs[nextIdx].state === 'bloqueado') {
-        newActs[nextIdx] = { ...newActs[nextIdx], state: 'disponible' };
-      }
-    }
-    newActs[idx] = act;
-    setActivities(newActs);
-
-    const inProgress = newActs.find(a => a.state === 'en_proceso');
-    const available = newActs.find(a => a.state === 'disponible');
+  const saveProgressWithActs = (acts: Activity[]) => {
+    const inProgress = acts.find(a => a.state === 'en_proceso');
+    const available = acts.find(a => a.state === 'disponible');
     const currentActName = inProgress ? inProgress.name : (available ? available.name : 'Completado');
-    const isAllFinished = newActs.every(a => a.state === 'finalizado');
+    const isAllFinished = acts.every(a => a.state === 'finalizado');
     const taskState = isAllFinished ? 'Finalizado' : (inProgress ? 'En Proceso' : 'Borrador');
 
     const updatedTask: PrepTask = {
@@ -647,14 +655,188 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
       actividad: currentActName,
       operador: initialTask?.operador || 'Por asignar',
       estado: taskState,
-      activities: newActs
+      activities: acts
     };
     onConfirm(updatedTask);
   };
 
-  const formatDuration = (start?: Date) => {
+  const toggleTimer = (id: string) => {
+    const newActs = [...activities];
+    const idx = newActs.findIndex(a => a.id === id);
+    const act = { ...newActs[idx] };
+
+    if (act.isTimerRunning) {
+      act.isTimerRunning = false;
+      act.endTime = new Date();
+    } else {
+      act.isTimerRunning = true;
+      act.startTime = act.startTime || new Date();
+      if (act.state === 'disponible') {
+        act.state = 'en_proceso';
+      }
+    }
+    newActs[idx] = act;
+    setActivities(newActs);
+    saveProgressWithActs(newActs);
+  };
+
+  const finishActivity = (id: string) => {
+    const newActs = [...activities];
+    const idx = newActs.findIndex(a => a.id === id);
+    const act = { ...newActs[idx] };
+
+    if (act.state === 'en_proceso') {
+      act.state = 'finalizado';
+      act.isTimerRunning = false;
+      act.endTime = act.endTime || new Date();
+      // Unlock next activity
+      const nextIdx = newActs.findIndex(a => a.blockedBy === act.name);
+      if (nextIdx !== -1 && newActs[nextIdx].state === 'bloqueado') {
+        newActs[nextIdx] = { ...newActs[nextIdx], state: 'disponible' };
+      }
+    }
+    newActs[idx] = act;
+    setActivities(newActs);
+    saveProgressWithActs(newActs);
+  };
+
+  const saveProgress = () => {
+    saveProgressWithActs(activities);
+  };
+
+  const handleActivityChange = (id: string, field: keyof Activity, value: any) => {
+    setActivities(prev => prev.map(a => a.id === id ? { ...a, [field]: value } : a));
+  };
+
+  const handlePhotoUpload = (id: string, file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const newPhoto: ActivityPhoto = {
+        id: `photo-${Date.now()}`,
+        url: reader.result as string,
+        timestamp: new Date().toISOString(),
+        observation: ''
+      };
+      setActivities(prev => prev.map(a => {
+        if (a.id === id) {
+          return { ...a, photos: [...(a.photos || []), newPhoto] };
+        }
+        return a;
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePhotoObservationChange = (activityId: string, photoId: string, observation: string) => {
+    setActivities(prev => prev.map(a => {
+      if (a.id === activityId) {
+        return {
+          ...a,
+          photos: a.photos?.map(p => p.id === photoId ? { ...p, observation } : p)
+        };
+      }
+      return a;
+    }));
+  };
+
+  const handleDeletePhoto = (activityId: string, photoId: string) => {
+    setActivities(prev => prev.map(a => {
+      if (a.id === activityId) {
+        return {
+          ...a,
+          photos: a.photos?.filter(p => p.id !== photoId)
+        };
+      }
+      return a;
+    }));
+  };
+
+  const handleManualDateChange = (id: string, field: 'startTime' | 'endTime', dateStr: string) => {
+    if (!dateStr) return;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    setActivities(prev => prev.map(a => {
+      if (a.id === id) {
+        const newDate = a[field] ? new Date(a[field]!) : new Date();
+        newDate.setFullYear(year, month - 1, day);
+        return { ...a, [field]: newDate, isTimerRunning: false };
+      }
+      return a;
+    }));
+  };
+
+  const handleManualTimeChange = (id: string, field: 'startTime' | 'endTime', timeStr: string) => {
+    if (!timeStr) return;
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    setActivities(prev => prev.map(a => {
+      if (a.id === id) {
+        const newDate = a[field] ? new Date(a[field]!) : new Date();
+        newDate.setHours(hours, minutes, 0, 0);
+        return { ...a, [field]: newDate, isTimerRunning: false };
+      }
+      return a;
+    }));
+  };
+
+  const toggleAccessory = (id: string, accessory: string) => {
+    setActivities(prev => prev.map(a => {
+      if (a.id === id) {
+        const current = a.accessories || [];
+        const next = current.includes(accessory)
+          ? current.filter(acc => acc !== accessory)
+          : [...current, accessory];
+        return { ...a, accessories: next };
+      }
+      return a;
+    }));
+  };
+
+  const toggleAccessoryTimer = (id: string) => {
+    const newActs = [...activities];
+    const idx = newActs.findIndex(a => a.id === id);
+    const act = { ...newActs[idx] };
+
+    if (act.isAccessoryTimerRunning) {
+      act.isAccessoryTimerRunning = false;
+      act.accessoryChangeEndTime = new Date();
+    } else {
+      act.isAccessoryTimerRunning = true;
+      act.accessoryChangeStartTime = act.accessoryChangeStartTime || new Date();
+    }
+    newActs[idx] = act;
+    setActivities(newActs);
+    saveProgressWithActs(newActs);
+  };
+
+  const handleManualAccessoryDateChange = (id: string, field: 'accessoryChangeStartTime' | 'accessoryChangeEndTime', dateStr: string) => {
+    if (!dateStr) return;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    setActivities(prev => prev.map(a => {
+      if (a.id === id) {
+        const newDate = a[field] ? new Date(a[field]!) : new Date();
+        newDate.setFullYear(year, month - 1, day);
+        return { ...a, [field]: newDate, isAccessoryTimerRunning: false };
+      }
+      return a;
+    }));
+  };
+
+  const handleManualAccessoryTimeChange = (id: string, field: 'accessoryChangeStartTime' | 'accessoryChangeEndTime', timeStr: string) => {
+    if (!timeStr) return;
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    setActivities(prev => prev.map(a => {
+      if (a.id === id) {
+        const newDate = a[field] ? new Date(a[field]!) : new Date();
+        newDate.setHours(hours, minutes, 0, 0);
+        return { ...a, [field]: newDate, isAccessoryTimerRunning: false };
+      }
+      return a;
+    }));
+  };
+
+  const formatDuration = (start?: Date, end?: Date, isRunning?: boolean) => {
     if (!start) return '00:00:00';
-    const diff = Math.floor((now.getTime() - start.getTime()) / 1000);
+    const endTime = isRunning ? now : (end || start);
+    const diff = Math.max(0, Math.floor((endTime.getTime() - start.getTime()) / 1000));
     const h = Math.floor(diff / 3600).toString().padStart(2, '0');
     const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
     const s = (diff % 60).toString().padStart(2, '0');
@@ -887,15 +1069,15 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                 <div 
                   key={act.id}
                   onClick={() => {
-                    if (isAvailable) {
-                      // Simular apertura de Nivel 3 o selección
-                      handleActivityAction(act.id);
+                    if (isAvailable || isInProgress) {
+                      setExpandedActivityId(prev => prev === act.id ? null : act.id);
                     }
                   }}
                   className={clsx(
                     "p-5 rounded-2xl transition-all duration-300 flex flex-col gap-4 relative overflow-hidden",
                     isBlocked && "bg-[#0D0D0D]/40 border border-white/5 opacity-60",
-                    isAvailable && "bg-[#0D0D0D] border border-[#FF8C00]/30 hover:shadow-[0_8px_30px_rgba(255,140,0,0.15)] hover:-translate-y-1 cursor-pointer",
+                    (isAvailable || isInProgress) && "cursor-pointer",
+                    isAvailable && "bg-[#0D0D0D] border border-[#FF8C00]/30 hover:shadow-[0_8px_30px_rgba(255,140,0,0.15)] hover:-translate-y-1",
                     isInProgress && "bg-[#0D0D0D] border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.2)]",
                     isFinished && "bg-black border border-white/10"
                   )}
@@ -918,9 +1100,12 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                       )}>{act.name}</h3>
                     </div>
                     
-                    {isInProgress && (
-                      <div className="text-[#FF8C00] font-mono text-sm bg-[#FF8C00]/10 px-3 py-1.5 rounded-lg border border-[#FF8C00]/20">
-                        {formatDuration(act.startTime)}
+                    {(isInProgress || isFinished) && (
+                      <div className={clsx(
+                        "font-mono text-sm px-3 py-1.5 rounded-lg border",
+                        isInProgress ? "text-[#FF8C00] bg-[#FF8C00]/10 border-[#FF8C00]/20" : "text-white/50 bg-white/5 border-white/10"
+                      )}>
+                        {formatDuration(act.startTime, act.endTime, act.isTimerRunning)}
                       </div>
                     )}
                   </div>
@@ -933,24 +1118,379 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                       </p>
                     )}
 
-                    {isAvailable && (
+                    {isAvailable && expandedActivityId !== act.id && (
                       <button 
-                        onClick={(e) => { e.stopPropagation(); handleActivityAction(act.id); }}
+                        onClick={(e) => { e.stopPropagation(); setExpandedActivityId(act.id); }}
                         className="w-full mt-2 py-3.5 bg-[#FF8C00]/10 text-[#FF8C00] font-bold rounded-xl hover:bg-[#FF8C00] hover:text-black transition-colors border border-[#FF8C00]/20 hover:border-transparent"
                       >
-                        Iniciar Labor
+                        Ver Detalles
                       </button>
                     )}
 
-                    {isInProgress && (
+                    {isInProgress && expandedActivityId !== act.id && (
                       <button 
-                        onClick={(e) => { e.stopPropagation(); handleActivityAction(act.id); }}
+                        onClick={(e) => { e.stopPropagation(); setExpandedActivityId(act.id); }}
                         className="w-full mt-2 py-3.5 bg-[#FF8C00] text-black font-bold rounded-xl hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20"
                       >
                         Registrar Valores
                       </button>
                     )}
+
+                    {isFinished && expandedActivityId !== act.id && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setExpandedActivityId(act.id); }}
+                        className="w-full mt-2 py-3.5 bg-white/5 text-white/70 font-bold rounded-xl hover:bg-white/10 transition-colors border border-white/10"
+                      >
+                        Ver Registro
+                      </button>
+                    )}
                   </div>
+
+                  {/* Expanded Content (Nivel 3) */}
+                  <AnimatePresence>
+                    {expandedActivityId === act.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden relative z-10"
+                      >
+                        <div className="pt-6 border-t border-white/10 mt-4 space-y-6" onClick={(e) => e.stopPropagation()}>
+                          {/* 2. Control de Tiempos */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Duración de Labor */}
+                            <div className="bg-[#121212] p-5 rounded-2xl border border-white/5">
+                              <h4 className="text-white/70 font-medium mb-4 flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-[#FF8C00]" />
+                                Duración de Labor
+                              </h4>
+                              <div className="flex items-center gap-4">
+                                <button 
+                                  onClick={() => toggleTimer(act.id)}
+                                  disabled={act.state === 'finalizado'}
+                                  className={clsx(
+                                    "w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg shrink-0",
+                                    act.isTimerRunning 
+                                      ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
+                                      : "bg-[#FF8C00]/20 text-[#FF8C00] border border-[#FF8C00]/30 hover:bg-[#FF8C00]/30",
+                                    act.state === 'finalizado' && "opacity-50 cursor-not-allowed"
+                                  )}
+                                >
+                                  {act.isTimerRunning ? <Square className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
+                                </button>
+
+                                <div className="flex-1 space-y-1">
+                                  <label className="block text-[10px] text-white/40 uppercase font-bold tracking-wider">Inicio</label>
+                                  <div className="flex flex-col gap-1">
+                                    <input 
+                                      type="date" 
+                                      value={act.startTime ? act.startTime.toISOString().split('T')[0] : ''}
+                                      onChange={(e) => handleManualDateChange(act.id, 'startTime', e.target.value)}
+                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                    />
+                                    <input 
+                                      type="time" 
+                                      value={act.startTime ? act.startTime.toTimeString().slice(0, 5) : ''}
+                                      onChange={(e) => handleManualTimeChange(act.id, 'startTime', e.target.value)}
+                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="flex-1 space-y-1">
+                                  <label className="block text-[10px] text-white/40 uppercase font-bold tracking-wider">Fin</label>
+                                  <div className="flex flex-col gap-1">
+                                    <input 
+                                      type="date" 
+                                      value={act.endTime ? act.endTime.toISOString().split('T')[0] : ''}
+                                      onChange={(e) => handleManualDateChange(act.id, 'endTime', e.target.value)}
+                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                    />
+                                    <input 
+                                      type="time" 
+                                      value={act.endTime ? act.endTime.toTimeString().slice(0, 5) : ''}
+                                      onChange={(e) => handleManualTimeChange(act.id, 'endTime', e.target.value)}
+                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="text-right flex flex-col justify-center min-w-[80px]">
+                                  <div className="text-xl font-mono font-bold text-white tracking-tight leading-none">
+                                    {formatDuration(act.startTime, act.endTime, act.isTimerRunning)}
+                                  </div>
+                                  <div className="text-[10px] text-[#FF8C00] uppercase tracking-wider font-bold mt-1">
+                                    {act.isTimerRunning ? 'En Ejecución' : (act.state === 'finalizado' ? 'Finalizado' : 'Detenido')}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Cambio de Accesorio */}
+                            <div className="bg-[#121212] p-5 rounded-2xl border border-white/5">
+                              <h4 className="text-white/70 font-medium mb-4 flex items-center gap-2">
+                                <Wrench className="w-4 h-4 text-[#FF8C00]" />
+                                Cambio de Accesorio
+                              </h4>
+                              <div className="flex items-center gap-4">
+                                <button 
+                                  onClick={() => toggleAccessoryTimer(act.id)}
+                                  className={clsx(
+                                    "w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg shrink-0",
+                                    act.isAccessoryTimerRunning 
+                                      ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
+                                      : "bg-white/5 text-white/50 border border-white/10 hover:bg-white/10"
+                                  )}
+                                >
+                                  {act.isAccessoryTimerRunning ? <Square className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
+                                </button>
+
+                                <div className="flex-1 space-y-1">
+                                  <label className="block text-[10px] text-white/40 uppercase font-bold tracking-wider">Inicio</label>
+                                  <div className="flex flex-col gap-1">
+                                    <input 
+                                      type="date" 
+                                      value={act.accessoryChangeStartTime ? act.accessoryChangeStartTime.toISOString().split('T')[0] : ''}
+                                      onChange={(e) => handleManualAccessoryDateChange(act.id, 'accessoryChangeStartTime', e.target.value)}
+                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                    />
+                                    <input 
+                                      type="time" 
+                                      value={act.accessoryChangeStartTime ? act.accessoryChangeStartTime.toTimeString().slice(0, 5) : ''}
+                                      onChange={(e) => handleManualAccessoryTimeChange(act.id, 'accessoryChangeStartTime', e.target.value)}
+                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="flex-1 space-y-1">
+                                  <label className="block text-[10px] text-white/40 uppercase font-bold tracking-wider">Fin</label>
+                                  <div className="flex flex-col gap-1">
+                                    <input 
+                                      type="date" 
+                                      value={act.accessoryChangeEndTime ? act.accessoryChangeEndTime.toISOString().split('T')[0] : ''}
+                                      onChange={(e) => handleManualAccessoryDateChange(act.id, 'accessoryChangeEndTime', e.target.value)}
+                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                    />
+                                    <input 
+                                      type="time" 
+                                      value={act.accessoryChangeEndTime ? act.accessoryChangeEndTime.toTimeString().slice(0, 5) : ''}
+                                      onChange={(e) => handleManualAccessoryTimeChange(act.id, 'accessoryChangeEndTime', e.target.value)}
+                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="text-right flex flex-col justify-center min-w-[80px]">
+                                  <div className={clsx(
+                                    "text-xl font-mono font-bold tracking-tight leading-none",
+                                    act.isAccessoryTimerRunning ? "text-white" : "text-white/50"
+                                  )}>
+                                    {formatDuration(act.accessoryChangeStartTime, act.accessoryChangeEndTime, act.isAccessoryTimerRunning)}
+                                  </div>
+                                  <div className="text-[10px] text-white/30 uppercase tracking-wider font-bold mt-1">
+                                    {act.isAccessoryTimerRunning ? 'En Ejecución' : 'Inactivo'}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3. Recursos y Accesorios */}
+                          <div className="bg-[#121212] p-5 rounded-2xl border border-white/5 space-y-4">
+                            <h4 className="text-white/70 font-medium flex items-center gap-2">
+                              <User className="w-4 h-4 text-[#FF8C00]" />
+                              Recursos y Accesorios
+                            </h4>
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-white/50 text-xs mb-1">Operador</label>
+                                  <select 
+                                    value={act.operator || ''}
+                                    onChange={(e) => handleActivityChange(act.id, 'operator', e.target.value)}
+                                    className="w-full bg-black border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#FF8C00]/50 appearance-none"
+                                  >
+                                    <option value="">Seleccionar Operador</option>
+                                    <option value="Carlos Mendoza">Carlos Mendoza</option>
+                                    <option value="Luis Fernando">Luis Fernando</option>
+                                  </select>
+                                </div>
+                                <div className="min-w-0">
+                                  <label className="block text-white/50 text-xs mb-1">Maquinaria</label>
+                                  <select 
+                                    value={act.machinery || ''}
+                                    onChange={(e) => handleActivityChange(act.id, 'machinery', e.target.value)}
+                                    className="w-full bg-black border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#FF8C00]/50 appearance-none"
+                                  >
+                                    <option value="">Seleccionar Maquinaria</option>
+                                    <option value="John Deere | 5090E | ABC-123">John Deere | 5090E | ABC-123</option>
+                                    <option value="Massey Ferguson | 4707 | DEF-456">Massey Ferguson | 4707 | DEF-456</option>
+                                    <option value="New Holland | T6.120 | GHI-789">New Holland | T6.120 | GHI-789</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-white/50 text-xs mb-1">Accesorios</label>
+                                <div className="flex flex-wrap gap-2">
+                                  {['Rastra 24 Discos', 'Arado 3 Cuerpos', 'Subsolador 5 Puntas', 'Sembradora'].map(acc => (
+                                    <button
+                                      key={acc}
+                                      onClick={() => toggleAccessory(act.id, acc)}
+                                      className={clsx(
+                                        "px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
+                                        act.accessories?.includes(acc)
+                                          ? "bg-[#FF8C00] text-black border-transparent"
+                                          : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10"
+                                      )}
+                                    >
+                                      {acc}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 4. Consumo y Métricas */}
+                          <div className="bg-[#121212] p-5 rounded-2xl border border-white/5 space-y-4">
+                            <h4 className="text-white/70 font-medium flex items-center gap-2">
+                              <Fuel className="w-4 h-4 text-[#FF8C00]" />
+                              Consumo y Métricas
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-white/70">Combustible</span>
+                                  <span className="text-xs text-[#FF8C00] bg-[#FF8C00]/10 px-2 py-1 rounded">Consumo: 15 L/h</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-white/50 text-xs mb-1">Horómetro Inicial</label>
+                                    <input 
+                                      type="number" 
+                                      placeholder="0.0" 
+                                      value={act.horometerStart || ''}
+                                      onChange={(e) => handleActivityChange(act.id, 'horometerStart', parseFloat(e.target.value))}
+                                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#FF8C00]/50" 
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-white/50 text-xs mb-1">Horómetro Final</label>
+                                    <input 
+                                      type="number" 
+                                      placeholder="0.0" 
+                                      value={act.horometerEnd || ''}
+                                      onChange={(e) => handleActivityChange(act.id, 'horometerEnd', parseFloat(e.target.value))}
+                                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#FF8C00]/50" 
+                                    />
+                                  </div>
+                                </div>
+                                <div className="bg-black/50 border border-white/5 rounded-lg p-3 flex justify-between items-center">
+                                  <span className="text-sm text-white/50">Total Consumo</span>
+                                  <span className="text-lg font-bold text-white">
+                                    {act.horometerStart !== undefined && act.horometerEnd !== undefined 
+                                      ? ((act.horometerEnd - act.horometerStart) * 15).toFixed(1) 
+                                      : '0.0'} <span className="text-sm text-white/50 font-normal">L</span>
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-white/70">Área Trabajada</span>
+                                  <span className="text-xs text-white/40">Ref: {selectedSeccion?.area || 'N/A'}</span>
+                                </div>
+                                <div>
+                                  <label className="block text-white/50 text-xs mb-1">Hectáreas (Ha)</label>
+                                  <div className="relative">
+                                    <input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      value={act.area || ''}
+                                      onChange={(e) => handleActivityChange(act.id, 'area', parseFloat(e.target.value))}
+                                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#FF8C00]/50 pl-9" 
+                                    />
+                                    <Ruler className="w-4 h-4 text-white/30 absolute left-3 top-1/2 -translate-y-1/2" />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 5. Evidencia y Cierre */}
+                          <div className="space-y-4 pt-4">
+                            {/* Historial de Fotos */}
+                            {act.photos && act.photos.length > 0 && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {act.photos.map(photo => (
+                                  <div key={photo.id} className="bg-black/40 border border-white/5 rounded-xl overflow-hidden flex flex-col">
+                                    <div className="relative aspect-video">
+                                      <img src={photo.url} alt="Evidencia" className="w-full h-full object-cover" />
+                                      <button 
+                                        onClick={() => handleDeletePhoto(act.id, photo.id)}
+                                        className="absolute top-2 right-2 p-2 bg-black/60 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2">
+                                        <span className="text-[10px] text-white/60">
+                                          {new Date(photo.timestamp).toLocaleString()}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="p-3">
+                                      <textarea
+                                        placeholder="Agregar observación..."
+                                        value={photo.observation}
+                                        onChange={(e) => handlePhotoObservationChange(act.id, photo.id, e.target.value)}
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#FF8C00]/50 resize-none h-16"
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="flex flex-col sm:flex-row gap-3">
+                              <label className="flex-1 bg-[#121212] border border-[#FF8C00]/30 text-[#FF8C00] py-4 rounded-xl font-bold hover:bg-[#FF8C00]/10 transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  capture="environment" 
+                                  className="hidden" 
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handlePhotoUpload(act.id, file);
+                                  }}
+                                />
+                                <Camera className="w-5 h-5" />
+                                Tomar Foto
+                              </label>
+                              <button 
+                                onClick={() => saveProgress()}
+                                className="flex-1 bg-[#121212] border border-white/10 text-white py-4 rounded-xl font-bold hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
+                              >
+                                <Save className="w-5 h-5" />
+                                Guardar Avance
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  finishActivity(act.id);
+                                  setExpandedActivityId(null);
+                                }}
+                                disabled={!isInProgress}
+                                className="flex-1 bg-[#FF8C00] text-black py-4 rounded-xl font-bold hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <CheckCircle2 className="w-5 h-5" />
+                                Finalizar Actividad
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}
