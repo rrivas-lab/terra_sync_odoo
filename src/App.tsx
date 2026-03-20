@@ -25,7 +25,9 @@ import {
   Maximize2,
   Trash2,
   Wifi,
-  WifiOff
+  WifiOff,
+  Home,
+  Sun
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -370,11 +372,132 @@ const ElevatedSelect = ({ label, icon: Icon, value, onChange, options, disabled 
 
 // --- Views ---
 
-const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline }: { 
+const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list') => void }) => {
+  const [showFincaModal, setShowFincaModal] = useState(false);
+  const [activeFinca, setActiveFinca] = useState('Hacienda Puricaure');
+  const fincas = ['Hacienda Puricaure', 'Finca El Paraíso', 'Hacienda La Esperanza'];
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-16 pb-24 px-4 pt-12">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+        <div className="space-y-6">
+          <h1 className="text-5xl font-bold tracking-tight text-[#FF8C00]">Hola, Roberto!</h1>
+          
+          {/* Farm Selector */}
+          <div 
+            onClick={() => setShowFincaModal(true)}
+            className="inline-flex items-center gap-3 bg-[#0D0D0D] px-6 py-4 rounded-2xl shadow-lg cursor-pointer hover:bg-[#1A1A1A] transition-colors"
+          >
+            <div className="w-10 h-10 rounded-full bg-[#FF8C00]/10 flex items-center justify-center">
+              <MapPin className="w-5 h-5 text-[#FF8C00]" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Finca Activa</p>
+              <p className="text-lg font-medium text-white">{activeFinca}</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-white/30 ml-2" />
+          </div>
+        </div>
+
+        {/* Weather Widget */}
+        <div className="flex items-center gap-4 bg-[#0D0D0D] px-6 py-4 rounded-2xl shadow-lg">
+          <Sun className="w-8 h-8 text-[#FF8C00]" />
+          <div>
+            <p className="text-2xl font-light text-white">28°C</p>
+            <p className="text-xs font-medium text-white/50 uppercase tracking-wider">Soleado</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Modules Section */}
+      <div className="space-y-6">
+        <h2 className="text-sm font-bold text-white/50 uppercase tracking-[0.2em] px-2">Módulos Disponibles</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Recepción de Semillas Card */}
+          <div 
+            onClick={() => onNavigate('list')}
+            className="group relative bg-[#0D0D0D] p-8 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF8C00]/5"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF8C00] to-transparent opacity-50" />
+            
+            <div className="flex flex-col h-full justify-between gap-12">
+              <div className="w-16 h-16 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                <Truck className="w-8 h-8 text-[#FF8C00]" />
+              </div>
+              
+              <div className="flex items-end justify-between gap-4">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-medium text-white group-hover:text-[#FF8C00] transition-colors">Recepción de Semillas</h3>
+                  <p className="text-sm text-white/40 leading-relaxed">
+                    Gestiona el ingreso de camiones, registro de pesos y control de calidad.
+                  </p>
+                </div>
+                <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF8C00] transition-colors">
+                  <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-black transition-colors" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Finca Modal */}
+      <AnimatePresence>
+        {showFincaModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowFincaModal(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#0D0D0D] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                <h3 className="text-lg font-medium text-white">Seleccionar Finca</h3>
+                <button onClick={() => setShowFincaModal(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+                  <X className="w-5 h-5 text-white/50" />
+                </button>
+              </div>
+              <div className="p-2">
+                {fincas.map(finca => (
+                  <button
+                    key={finca}
+                    onClick={() => {
+                      setActiveFinca(finca);
+                      setShowFincaModal(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center justify-between p-4 rounded-2xl transition-colors",
+                      activeFinca === finca ? "bg-[#FF8C00]/10 text-[#FF8C00]" : "text-white hover:bg-white/5"
+                    )}
+                  >
+                    <span className="font-medium">{finca}</span>
+                    {activeFinca === finca && <CheckCircle2 className="w-5 h-5" />}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline, onGoHome }: { 
   vehicles: Vehicle[], 
   onNewVehicle: () => void, 
   onSelectVehicle: (v: Vehicle) => void,
-  isOnline: boolean
+  isOnline: boolean,
+  onGoHome: () => void
 }) => {
   const [filterStage, setFilterStage] = useState<string>('todos');
   const [filterDate, setFilterDate] = useState<string>('');
@@ -403,9 +526,18 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline }: {
   return (
     <div className="max-w-6xl mx-auto space-y-12 pb-24">
       <div className="flex items-end justify-between px-2">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-light tracking-tight text-[#FF8C00]">Registro de Semilla</h1>
-          <p className="text-[10px] font-bold text-white/50 uppercase tracking-[0.4em]">Panel de Control · High-End Edition</p>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={onGoHome}
+            className="p-3 bg-[#0D0D0D] text-[#FF8C00] rounded-xl hover:bg-[#FF8C00]/10 transition-colors"
+            title="Volver al Inicio"
+          >
+            <Home className="w-6 h-6" />
+          </button>
+          <div className="space-y-1">
+            <h1 className="text-4xl font-light tracking-tight text-[#FF8C00]">Registro de Semilla</h1>
+            <p className="text-[10px] font-bold text-white/50 uppercase tracking-[0.4em]">Panel de Control · High-End Edition</p>
+          </div>
         </div>
         <button 
           onClick={onNewVehicle}
@@ -599,10 +731,19 @@ const FormView = ({
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-24">
       <div className="flex items-center justify-between px-2">
-        <button onClick={() => setView('list')} className="flex items-center gap-4 text-white/40 hover:text-[#FF8C00] transition-colors group">
-          <ArrowLeft className="w-5 h-5" />
-          <span className="text-xs font-bold tracking-widest uppercase">Volver</span>
-        </button>
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={() => setView('dashboard')}
+            className="p-2 bg-[#0D0D0D] text-[#FF8C00] rounded-xl hover:bg-[#FF8C00]/10 transition-colors"
+            title="Volver al Inicio"
+          >
+            <Home className="w-5 h-5" />
+          </button>
+          <button onClick={() => setView('list')} className="flex items-center gap-4 text-white/40 hover:text-[#FF8C00] transition-colors group">
+            <ArrowLeft className="w-5 h-5" />
+            <span className="text-xs font-bold tracking-widest uppercase">Volver</span>
+          </button>
+        </div>
         <div className="text-right space-y-1">
           <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">ID Registro</p>
           <p className="text-xl font-medium text-[#FF8C00]">{selectedVehicle.id}</p>
@@ -1186,12 +1327,22 @@ const OperationView = ({
       {/* 2. Cabecera (Mini-Header) */}
       <header className="w-full px-6 md:px-12 py-3 md:py-4 flex justify-between items-center bg-[#0D0D0D] border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)] relative z-50">
         <div className="flex items-center gap-4 md:gap-8">
-          <button 
-            onClick={() => setView('form')}
-            className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/40 hover:text-white"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setView('dashboard')}
+              className="p-2 hover:bg-white/5 rounded-full transition-colors text-[#FF8C00] hover:text-[#FF8C00]/80"
+              title="Volver al Inicio"
+            >
+              <Home className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setView('form')}
+              className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/40 hover:text-white"
+              title="Volver al Formulario"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          </div>
           <div className="h-6 w-px bg-white/10 hidden md:block" />
           <div className="flex gap-6 md:gap-10">
             <div className="flex flex-col">
@@ -1613,7 +1764,7 @@ const OperationView = ({
 };
 
 export default function App() {
-  const [view, setView] = useState<'list' | 'form' | 'operation'>('list');
+  const [view, setView] = useState<'dashboard' | 'list' | 'form' | 'operation'>('dashboard');
   const [isOnline, setIsOnline] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([
     {
@@ -1803,12 +1954,16 @@ export default function App() {
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="h-full"
           >
+            {view === 'dashboard' && (
+              <DashboardView onNavigate={setView} />
+            )}
             {view === 'list' && (
               <ListView 
                 vehicles={vehicles} 
                 onNewVehicle={handleNewVehicle} 
                 onSelectVehicle={handleSelectVehicle} 
                 isOnline={isOnline}
+                onGoHome={() => setView('dashboard')}
               />
             )}
             {view === 'form' && (
