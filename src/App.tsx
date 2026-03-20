@@ -100,7 +100,19 @@ interface FuelRecord {
   tipo: 'Tractor' | 'Camioneta' | 'Maquinaria Pesada' | 'Generador';
   volumen: number;
   operador: string;
+  ci_operador: string;
+  despachador: string;
+  ci_despachador: string;
+  marca: string;
+  modelo: string;
+  serial: string;
+  tipo_combustible: string;
+  km_inicial: number;
+  km_final: number;
+  total_recorrido: number;
+  rendimiento: number;
   estado: 'Finalizado' | 'Borrador';
+  nivel_actual: 1 | 2 | 3;
 }
 
 // --- Mock Data ---
@@ -124,56 +136,114 @@ const MOCK_FINCAS = ['Hacienda Puricaure', 'Hacienda El Paraíso', 'Finca La Esp
 const MOCK_SEMILLEROS = ['1', '2', '3', '4', '5', '6'];
 const MOCK_DESPACHADORES = ['Miguel Ángel', 'Roberto Carlos', 'Ana María', 'Luis Fernando'];
 
+const MOCK_MACHINERY = [
+  { nombre: 'John Deere 6125J', marca: 'John Deere', modelo: '6125J', placa: 'TRACT-001', serial: 'JD6125J-001', tipo: 'Tractor', combustible: 'Diesel' },
+  { nombre: 'Toyota Hilux', marca: 'Toyota', modelo: 'Hilux', placa: 'PICK-042', serial: 'TH-042-ABC', tipo: 'Camioneta', combustible: 'Gasolina' },
+  { nombre: 'Caterpillar D6', marca: 'Caterpillar', modelo: 'D6', placa: 'MAQ-015', serial: 'CAT-D6-999', tipo: 'Maquinaria Pesada', combustible: 'Diesel' },
+  { nombre: 'John Deere 5075E', marca: 'John Deere', modelo: '5075E', placa: 'TRACT-008', serial: 'JD5075E-888', tipo: 'Tractor', combustible: 'Diesel' },
+  { nombre: 'Generador Cummins', marca: 'Cummins', modelo: 'C150', placa: 'GEN-002', serial: 'CUM-150-X', tipo: 'Generador', combustible: 'Diesel' },
+];
+
+const MOCK_CONTACTS = [
+  { nombre: 'Juan Pérez', ci: 'V-12.345.678' },
+  { nombre: 'Carlos Rodríguez', ci: 'V-8.765.432' },
+  { nombre: 'Mario Castañeda', ci: 'V-15.123.456' },
+  { nombre: 'Roberto Gómez', ci: 'V-10.987.654' },
+  { nombre: 'Luis Martínez', ci: 'V-20.111.222' },
+  { nombre: 'Miguel Ángel', ci: 'V-11.222.333' },
+  { nombre: 'Roberto Carlos', ci: 'V-9.888.777' },
+  { nombre: 'Ana María', ci: 'V-18.444.555' },
+  { nombre: 'Luis Fernando', ci: 'V-14.666.777' },
+];
+
 const MOCK_FUEL_RECORDS: FuelRecord[] = [
   {
-    id: 'HPR-FO-PRO-007',
+    id: 'HPR-FO-PRO-007-001',
     fecha: '2024-03-20',
     equipo: 'John Deere 6125J',
     placa: 'TRACT-001',
     tipo: 'Tractor',
     volumen: 45.5,
     operador: 'Juan Pérez',
-    estado: 'Finalizado'
+    ci_operador: 'V-12.345.678',
+    despachador: 'Miguel Ángel',
+    ci_despachador: 'V-11.222.333',
+    marca: 'John Deere',
+    modelo: '6125J',
+    serial: 'JD6125J-001',
+    tipo_combustible: 'Diesel',
+    km_inicial: 12500,
+    km_final: 12550,
+    total_recorrido: 50,
+    rendimiento: 0.91,
+    estado: 'Finalizado',
+    nivel_actual: 3
   },
   {
-    id: 'HPR-FO-PRO-008',
+    id: 'HPR-FO-PRO-007-002',
     fecha: '2024-03-20',
     equipo: 'Toyota Hilux',
     placa: 'PICK-042',
     tipo: 'Camioneta',
     volumen: 60.0,
     operador: 'Carlos Rodríguez',
-    estado: 'Finalizado'
+    ci_operador: 'V-8.765.432',
+    despachador: 'Roberto Carlos',
+    ci_despachador: 'V-9.888.777',
+    marca: 'Toyota',
+    modelo: 'Hilux',
+    serial: 'TH-042-ABC',
+    tipo_combustible: 'Gasolina',
+    km_inicial: 45000,
+    km_final: 45400,
+    total_recorrido: 400,
+    rendimiento: 0.15,
+    estado: 'Finalizado',
+    nivel_actual: 3
   },
   {
-    id: 'HPR-FO-PRO-009',
+    id: 'HPR-FO-PRO-007-003',
     fecha: '2024-03-19',
     equipo: 'Caterpillar D6',
     placa: 'MAQ-015',
     tipo: 'Maquinaria Pesada',
     volumen: 120.0,
     operador: 'Mario Castañeda',
-    estado: 'Borrador'
+    ci_operador: 'V-15.123.456',
+    despachador: 'Ana María',
+    ci_despachador: 'V-18.444.555',
+    marca: 'Caterpillar',
+    modelo: 'D6',
+    serial: 'CAT-D6-999',
+    tipo_combustible: 'Diesel',
+    km_inicial: 5600,
+    km_final: 0,
+    total_recorrido: 0,
+    rendimiento: 0,
+    estado: 'Borrador',
+    nivel_actual: 2
   },
   {
-    id: 'HPR-FO-PRO-010',
+    id: 'HPR-FO-PRO-007-004',
     fecha: '2024-03-18',
     equipo: 'John Deere 5075E',
     placa: 'TRACT-008',
     tipo: 'Tractor',
     volumen: 35.2,
     operador: 'Roberto Gómez',
-    estado: 'Finalizado'
-  },
-  {
-    id: 'HPR-FO-PRO-007-005',
-    fecha: '2024-03-17',
-    equipo: 'Generador Cummins',
-    placa: 'GEN-002',
-    tipo: 'Generador',
-    volumen: 85.0,
-    operador: 'Luis Martínez',
-    estado: 'Finalizado'
+    ci_operador: 'V-10.987.654',
+    despachador: 'Luis Fernando',
+    ci_despachador: 'V-14.666.777',
+    marca: 'John Deere',
+    modelo: '5075E',
+    serial: 'JD5075E-888',
+    tipo_combustible: 'Diesel',
+    km_inicial: 8900,
+    km_final: 8945,
+    total_recorrido: 45,
+    rendimiento: 0.78,
+    estado: 'Finalizado',
+    nivel_actual: 3
   }
 ];
 
@@ -412,6 +482,27 @@ const ElevatedInput = ({ label, icon: Icon, value, onChange, disabled, type = "t
           disabled && "opacity-60 cursor-default"
         )}
       />
+    </div>
+  </div>
+);
+
+const ProminentInput = ({ label, icon: Icon, value, onChange, placeholder, unit }: any) => (
+  <div className="space-y-4">
+    <label className="text-xs font-bold uppercase tracking-[0.3em] text-white/30 ml-2">{label}</label>
+    <div className="relative group">
+      <div className="absolute left-6 top-1/2 -translate-y-1/2">
+        <Icon className="w-6 h-6 text-[#FF8C00]/40 group-focus-within:text-[#FF8C00] transition-colors" />
+      </div>
+      <input 
+        type="number"
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="w-full bg-black/40 border border-white/5 rounded-[2rem] py-8 pl-16 pr-12 text-4xl font-black text-[#FF8C00] outline-none focus:border-[#FF8C00]/30 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+      />
+      {unit && (
+        <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xl font-black text-white/10 uppercase">{unit}</span>
+      )}
     </div>
   </div>
 );
@@ -3409,6 +3500,368 @@ const OperationView = ({
   );
 };
 
+const FuelFormView = ({ 
+  record, 
+  onSave, 
+  onCancel 
+}: { 
+  record: FuelRecord | null, 
+  onSave: (record: FuelRecord) => void, 
+  onCancel: () => void 
+}) => {
+  const [level, setLevel] = useState<1 | 2 | 3>(record?.nivel_actual || 1);
+  const [formData, setFormData] = useState<FuelRecord>(record || {
+    id: `HPR-FO-PRO-007-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+    fecha: new Date().toISOString().split('T')[0],
+    equipo: '',
+    placa: '',
+    tipo: 'Tractor',
+    volumen: 0,
+    operador: '',
+    ci_operador: '',
+    despachador: '',
+    ci_despachador: '',
+    marca: '',
+    modelo: '',
+    serial: '',
+    tipo_combustible: '',
+    km_inicial: 0,
+    km_final: 0,
+    total_recorrido: 0,
+    rendimiento: 0,
+    estado: 'Borrador',
+    nivel_actual: 1
+  });
+
+  const handleMachineryChange = (nombre: string) => {
+    const machine = MOCK_MACHINERY.find(m => m.nombre === nombre);
+    if (machine) {
+      setFormData(prev => ({
+        ...prev,
+        equipo: machine.nombre,
+        marca: machine.marca,
+        modelo: machine.modelo,
+        placa: machine.placa,
+        serial: machine.serial,
+        tipo: machine.tipo as any,
+        tipo_combustible: machine.combustible
+      }));
+    }
+  };
+
+  const handleOperatorChange = (nombre: string) => {
+    const contact = MOCK_CONTACTS.find(c => c.nombre === nombre);
+    if (contact) {
+      setFormData(prev => ({
+        ...prev,
+        operador: contact.nombre,
+        ci_operador: contact.ci
+      }));
+    }
+  };
+
+  const handleDispatcherChange = (nombre: string) => {
+    const contact = MOCK_CONTACTS.find(c => c.nombre === nombre);
+    if (contact) {
+      setFormData(prev => ({
+        ...prev,
+        despachador: contact.nombre,
+        ci_despachador: contact.ci
+      }));
+    }
+  };
+
+  const calculatePerformance = (final: number) => {
+    const total = Math.max(0, final - formData.km_inicial);
+    const rend = total > 0 ? formData.volumen / total : 0;
+    setFormData(prev => ({
+      ...prev,
+      km_final: final,
+      total_recorrido: total,
+      rendimiento: Number(rend.toFixed(2))
+    }));
+  };
+
+  const isLevel1Complete = formData.equipo && formData.operador && formData.despachador;
+  const isLevel2Complete = formData.volumen > 0 && formData.km_inicial >= 0;
+  const isLevel3Complete = formData.km_final >= formData.km_inicial;
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-8 pb-24 px-4 pt-8">
+      {/* Header */}
+      <div className="flex items-center justify-between bg-[#0D0D0D] p-8 rounded-[32px] shadow-2xl">
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={onCancel}
+            className="p-4 bg-white/5 text-[#FF8C00] rounded-2xl hover:bg-[#FF8C00]/10 transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <div>
+            <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Carga de Combustible</h1>
+            <div className="flex items-center gap-4 mt-2">
+              <span className="text-xs font-bold text-[#FF8C00] uppercase tracking-widest">{formData.id}</span>
+              <span className="w-1 h-1 rounded-full bg-white/20" />
+              <span className="text-xs font-bold text-white/40 uppercase tracking-widest">{formData.fecha}</span>
+            </div>
+          </div>
+        </div>
+        <div className="hidden md:flex items-center gap-2">
+          {[1, 2, 3].map((step) => (
+            <div 
+              key={step}
+              className={cn(
+                "w-10 h-2 rounded-full transition-all duration-500",
+                level >= step ? "bg-[#FF8C00]" : "bg-white/5"
+              )}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {/* Level 1: Identificación */}
+        <motion.div 
+          initial={false}
+          animate={{ 
+            opacity: level >= 1 ? 1 : 0.5,
+            scale: level === 1 ? 1 : 0.98
+          }}
+          className={cn(
+            "bg-[#0D0D0D] p-8 rounded-[40px] shadow-2xl space-y-8 transition-all duration-500",
+            level > 1 && "pointer-events-none opacity-40"
+          )}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center">
+              <Tractor className="w-6 h-6 text-[#FF8C00]" />
+            </div>
+            <h2 className="text-xl font-black text-white uppercase tracking-tight">Nivel 1: Identificación</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <ElevatedSelect 
+                label="Equipo a Surtir" 
+                icon={Tractor} 
+                options={MOCK_MACHINERY.map(m => m.nombre)}
+                value={formData.equipo}
+                onChange={(e: any) => handleMachineryChange(e.target.value)}
+              />
+              
+              {formData.equipo && (
+                <div className="bg-black/40 p-6 rounded-2xl space-y-4 border border-white/5">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Marca / Modelo</p>
+                      <p className="text-sm font-medium text-white">{formData.marca} / {formData.modelo}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Placa / Serial</p>
+                      <p className="text-sm font-medium text-white">{formData.placa} / {formData.serial}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Tipo de Combustible</p>
+                    <p className="text-sm font-medium text-[#FF8C00]">{formData.tipo_combustible}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-6">
+                <div className="space-y-4">
+                  <ElevatedSelect 
+                    label="Operador" 
+                    icon={User} 
+                    options={MOCK_CONTACTS.map(c => c.nombre)}
+                    value={formData.operador}
+                    onChange={(e: any) => handleOperatorChange(e.target.value)}
+                  />
+                  {formData.ci_operador && (
+                    <div className="px-4 py-2 bg-white/5 rounded-xl inline-block">
+                      <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">C.I. Operador: <span className="text-white">{formData.ci_operador}</span></p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <ElevatedSelect 
+                    label="Despachador" 
+                    icon={UserCheck} 
+                    options={MOCK_CONTACTS.map(c => c.nombre)}
+                    value={formData.despachador}
+                    onChange={(e: any) => handleDispatcherChange(e.target.value)}
+                  />
+                  {formData.ci_despachador && (
+                    <div className="px-4 py-2 bg-white/5 rounded-xl inline-block">
+                      <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">C.I. Despachador: <span className="text-white">{formData.ci_despachador}</span></p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {level === 1 && (
+            <button 
+              onClick={() => setLevel(2)}
+              disabled={!isLevel1Complete}
+              className="w-full py-6 bg-[#FF8C00] text-black rounded-2xl font-black text-sm hover:bg-[#FF8C00]/90 transition-all uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,140,0,0.2)] disabled:opacity-20"
+            >
+              Confirmar Identificación
+            </button>
+          )}
+        </motion.div>
+
+        {/* Level 2: Registro de Carga */}
+        <motion.div 
+          initial={false}
+          animate={{ 
+            opacity: level >= 2 ? 1 : 0.2,
+            scale: level === 2 ? 1 : 0.98
+          }}
+          className={cn(
+            "bg-[#0D0D0D] p-8 rounded-[40px] shadow-2xl space-y-10 transition-all duration-500",
+            level !== 2 && "pointer-events-none"
+          )}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center">
+              <Fuel className="w-6 h-6 text-[#FF8C00]" />
+            </div>
+            <h2 className="text-xl font-black text-white uppercase tracking-tight">Nivel 2: Registro de Carga</h2>
+          </div>
+
+          <div className="flex flex-col items-center gap-12 py-8">
+            <div className="space-y-4 text-center">
+              <p className="text-xs font-bold text-white/30 uppercase tracking-[0.4em]">Volumen Recargado</p>
+              <div className="flex items-center gap-8">
+                <button 
+                  onClick={() => setFormData(prev => ({ ...prev, volumen: Math.max(0, prev.volumen - 1) }))}
+                  className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-90"
+                >
+                  <Minus className="w-8 h-8" />
+                </button>
+                
+                <div className="flex items-baseline gap-2">
+                  <input 
+                    type="number"
+                    value={formData.volumen || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, volumen: parseFloat(e.target.value) || 0 }))}
+                    className="w-48 bg-transparent text-7xl font-black text-[#FF8C00] text-center outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <span className="text-2xl font-black text-white/20">L</span>
+                </div>
+
+                <button 
+                  onClick={() => setFormData(prev => ({ ...prev, volumen: prev.volumen + 1 }))}
+                  className="w-20 h-20 rounded-3xl bg-[#FF8C00]/10 flex items-center justify-center text-[#FF8C00] hover:bg-[#FF8C00]/20 transition-all active:scale-90"
+                >
+                  <Plus className="w-8 h-8" />
+                </button>
+              </div>
+            </div>
+
+            <div className="w-full max-w-lg">
+              <ProminentInput 
+                label={formData.tipo === 'Tractor' || formData.tipo === 'Maquinaria Pesada' ? "Horas Iniciales" : "Kilometraje Inicial"}
+                icon={History}
+                value={formData.km_inicial || ''}
+                onChange={(e: any) => setFormData(prev => ({ ...prev, km_inicial: parseFloat(e.target.value) || 0 }))}
+                placeholder="0.0"
+                unit={formData.tipo === 'Tractor' || formData.tipo === 'Maquinaria Pesada' ? "Hrs" : "Km"}
+              />
+            </div>
+          </div>
+
+          {level === 2 && (
+            <button 
+              onClick={() => setLevel(3)}
+              disabled={!isLevel2Complete}
+              className="w-full py-6 bg-[#FF8C00] text-black rounded-2xl font-black text-sm hover:bg-[#FF8C00]/90 transition-all uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,140,0,0.2)] disabled:opacity-20"
+            >
+              Confirmar Carga
+            </button>
+          )}
+        </motion.div>
+
+        {/* Level 3: Cierre y Rendimiento */}
+        <motion.div 
+          initial={false}
+          animate={{ 
+            opacity: level >= 3 ? 1 : 0.2,
+            scale: level === 3 ? 1 : 0.98
+          }}
+          className={cn(
+            "bg-[#0D0D0D] p-8 rounded-[40px] shadow-2xl space-y-10 transition-all duration-500",
+            level !== 3 && "pointer-events-none"
+          )}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center">
+              <Calculator className="w-6 h-6 text-[#FF8C00]" />
+            </div>
+            <h2 className="text-xl font-black text-white uppercase tracking-tight">Nivel 3: Cierre y Rendimiento</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="space-y-8">
+              <ProminentInput 
+                label={formData.tipo === 'Tractor' || formData.tipo === 'Maquinaria Pesada' ? "Horas Finales" : "Kilometraje Final"}
+                icon={History}
+                value={formData.km_final || ''}
+                onChange={(e: any) => calculatePerformance(parseFloat(e.target.value) || 0)}
+                placeholder="0.0"
+                unit={formData.tipo === 'Tractor' || formData.tipo === 'Maquinaria Pesada' ? "Hrs" : "Km"}
+              />
+
+              <div className="bg-black/60 p-8 rounded-[32px] border border-[#FF8C00]/10 space-y-8">
+                <div>
+                  <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Total Recorrido / Horas</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black text-[#FF8C00]">{formData.total_recorrido}</span>
+                    <span className="text-sm font-bold text-white/40 uppercase">{formData.tipo === 'Tractor' || formData.tipo === 'Maquinaria Pesada' ? 'Hrs' : 'Km'}</span>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-white/5">
+                  <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Promedio de Rendimiento</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-black text-[#FF8C00] drop-shadow-[0_0_15px_rgba(255,140,0,0.3)]">{formData.rendimiento}</span>
+                    <span className="text-sm font-bold text-white/40 uppercase">L / {formData.tipo === 'Tractor' || formData.tipo === 'Maquinaria Pesada' ? 'Hr' : 'Km'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col justify-center items-center text-center p-8 bg-[#FF8C00]/5 rounded-[32px] border border-[#FF8C00]/10">
+              <div className="w-20 h-20 rounded-full bg-[#FF8C00]/20 flex items-center justify-center mb-6">
+                <CheckCircle2 className="w-10 h-10 text-[#FF8C00]" />
+              </div>
+              <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Registro Listo</h3>
+              <p className="text-sm text-white/40 leading-relaxed">
+                Todos los datos han sido validados. Al finalizar, el folio se cerrará y se sincronizará con Odoo.
+              </p>
+            </div>
+          </div>
+
+          {level === 3 && (
+            <button 
+              onClick={() => onSave({ ...formData, estado: 'Finalizado', nivel_actual: 3 })}
+              disabled={!isLevel3Complete}
+              className="w-full py-6 bg-[#FF8C00] text-black rounded-2xl font-black text-sm hover:bg-[#FF8C00]/90 transition-all uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,140,0,0.2)] disabled:opacity-20"
+            >
+              Finalizar Registro
+            </button>
+          )}
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
 const FuelListView = ({ 
   records, 
   onNew, 
@@ -3728,53 +4181,6 @@ const FuelListView = ({
   );
 };
 
-const FuelFormView = ({ 
-  record, 
-  onGoBack 
-}: { 
-  record: FuelRecord | null, 
-  onGoBack: () => void 
-}) => (
-  <div className="max-w-4xl mx-auto px-4 pt-12 text-center space-y-12">
-    <div className="flex items-center gap-4">
-      <button 
-        onClick={onGoBack}
-        className="p-3 bg-[#0D0D0D] text-[#FF8C00] rounded-2xl hover:bg-[#FF8C00]/10 transition-colors shadow-lg border border-white/5"
-      >
-        <ArrowLeft className="w-6 h-6" />
-      </button>
-      <h1 className="text-3xl font-bold tracking-tight text-white">
-        {record ? `Detalle: ${record.id}` : 'Nuevo Registro de Combustible'}
-      </h1>
-    </div>
-
-    <div className="bg-[#0D0D0D] rounded-[3rem] p-16 border border-white/5 shadow-2xl space-y-8">
-      <div className="w-32 h-32 bg-[#FF8C00]/10 rounded-full flex items-center justify-center mx-auto">
-        <Fuel className="w-16 h-16 text-[#FF8C00]" />
-      </div>
-      
-      <div className="space-y-4">
-        <h2 className="text-4xl font-bold text-white tracking-tight">Formulario de Registro</h2>
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF8C00]/20 rounded-full border border-[#FF8C00]/30">
-          <Wrench className="w-4 h-4 text-[#FF8C00]" />
-          <span className="text-xs font-black uppercase tracking-widest text-[#FF8C00]">En Construcción</span>
-        </div>
-      </div>
-
-      <p className="text-white/40 max-w-md mx-auto leading-relaxed">
-        El formulario detallado para {record ? 'editar' : 'crear'} registros de combustible está siendo optimizado para la recolección de datos en campo.
-      </p>
-
-      <button 
-        onClick={onGoBack}
-        className="px-10 py-4 bg-[#FF8C00] text-black rounded-2xl font-bold hover:bg-[#FF8C00]/90 transition-all shadow-xl shadow-[#FF8C00]/20"
-      >
-        Regresar a la Lista
-      </button>
-    </div>
-  </div>
-);
-
 export default function App() {
   const [view, setView] = useState<'dashboard' | 'list' | 'form' | 'operation' | 'prep' | 'prep-form' | 'fuel' | 'fuel-form'>('dashboard');
   const [isOnline, setIsOnline] = useState(true);
@@ -4068,7 +4474,15 @@ export default function App() {
             {view === 'fuel-form' && (
               <FuelFormView 
                 record={selectedFuelRecord}
-                onGoBack={() => setView('fuel')}
+                onSave={(updated) => {
+                  setFuelRecords(prev => {
+                    const exists = prev.find(r => r.id === updated.id);
+                    if (exists) return prev.map(r => r.id === updated.id ? updated : r);
+                    return [updated, ...prev];
+                  });
+                  setView('fuel');
+                }}
+                onCancel={() => setView('fuel')}
               />
             )}
           </motion.div>
