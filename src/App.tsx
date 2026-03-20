@@ -383,7 +383,7 @@ const ElevatedSelect = ({ label, icon: Icon, value, onChange, options, disabled 
 
 // --- Views ---
 
-const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep') => void }) => {
+const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep' | 'fuel') => void }) => {
   const [showFincaModal, setShowFincaModal] = useState(false);
   const [activeFinca, setActiveFinca] = useState('Hacienda Puricaure');
   const fincas = ['Hacienda Puricaure', 'Finca El Paraíso', 'Hacienda La Esperanza'];
@@ -470,6 +470,32 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep') => 
               <div className="flex items-end justify-between gap-4 mt-auto">
                 <p className="text-sm text-white/40 leading-relaxed">
                   Planifica y registra labores de arado, rastreo y nivelación.
+                </p>
+                <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF8C00] transition-colors">
+                  <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-black transition-colors" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Consumo Combustible Card */}
+          <div 
+            onClick={() => onNavigate('fuel')}
+            className="group relative bg-[#0D0D0D] p-6 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF8C00]/5 border border-white/5 hover:border-[#FF8C00]/30"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF8C00] to-transparent opacity-30 group-hover:opacity-50 transition-opacity" />
+            
+            <div className="flex flex-col h-full gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shrink-0">
+                  <Fuel className="w-6 h-6 text-[#FF8C00]" />
+                </div>
+                <h3 className="text-xl font-medium text-white group-hover:text-[#FF8C00] transition-colors leading-tight">Consumo Combustible</h3>
+              </div>
+              
+              <div className="flex items-end justify-between gap-4 mt-auto">
+                <p className="text-sm text-white/40 leading-relaxed">
+                  Control y monitoreo de abastecimiento de combustible para maquinaria.
                 </p>
                 <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF8C00] transition-colors">
                   <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-black transition-colors" />
@@ -3328,8 +3354,48 @@ const OperationView = ({
   );
 };
 
+const FuelPlaceholderView = ({ onGoHome }: { onGoHome: () => void }) => (
+  <div className="max-w-4xl mx-auto px-4 pt-12 text-center space-y-12">
+    <div className="flex items-center gap-4">
+      <button 
+        onClick={onGoHome}
+        className="p-3 bg-[#0D0D0D] text-[#FF8C00] rounded-2xl hover:bg-[#FF8C00]/10 transition-colors shadow-lg"
+        title="Volver al Inicio"
+      >
+        <Home className="w-6 h-6" />
+      </button>
+      <h1 className="text-3xl font-bold tracking-tight text-white">Consumo Combustible</h1>
+    </div>
+
+    <div className="bg-[#0D0D0D] rounded-[3rem] p-16 border border-white/5 shadow-2xl space-y-8">
+      <div className="w-32 h-32 bg-[#FF8C00]/10 rounded-full flex items-center justify-center mx-auto animate-pulse">
+        <Fuel className="w-16 h-16 text-[#FF8C00]" />
+      </div>
+      
+      <div className="space-y-4">
+        <h2 className="text-4xl font-bold text-white tracking-tight">Módulo de Control de Combustible</h2>
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF8C00]/20 rounded-full border border-[#FF8C00]/30">
+          <Wrench className="w-4 h-4 text-[#FF8C00]" />
+          <span className="text-xs font-black uppercase tracking-widest text-[#FF8C00]">En Construcción</span>
+        </div>
+      </div>
+
+      <p className="text-white/40 max-w-md mx-auto leading-relaxed">
+        Estamos trabajando para integrar el sistema de monitoreo de combustible en tiempo real. Pronto podrás registrar abastecimientos y consultar rendimientos por maquinaria.
+      </p>
+
+      <button 
+        onClick={onGoHome}
+        className="px-10 py-4 bg-[#FF8C00] text-black rounded-2xl font-bold hover:bg-[#FF8C00]/90 transition-all shadow-xl shadow-[#FF8C00]/20"
+      >
+        Regresar al Dashboard
+      </button>
+    </div>
+  </div>
+);
+
 export default function App() {
-  const [view, setView] = useState<'dashboard' | 'list' | 'form' | 'operation' | 'prep'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'list' | 'form' | 'operation' | 'prep' | 'prep-form' | 'fuel'>('dashboard');
   const [isOnline, setIsOnline] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([
     {
@@ -3607,6 +3673,9 @@ export default function App() {
                   return [newTask, ...prev];
                 })}
               />
+            )}
+            {view === 'fuel' && (
+              <FuelPlaceholderView onGoHome={() => setView('dashboard')} />
             )}
           </motion.div>
         </AnimatePresence>
