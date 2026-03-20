@@ -13,6 +13,7 @@ import {
   Calculator, 
   Minus, 
   ClipboardList,
+  FileText,
   ArrowLeft,
   ArrowRight,
   Search,
@@ -537,6 +538,12 @@ interface ActivityPhoto {
   observation: string;
 }
 
+interface ActivityNote {
+  id: string;
+  text: string;
+  timestamp: string;
+}
+
 interface Activity {
   id: string;
   name: string;
@@ -555,6 +562,7 @@ interface Activity {
   horometerEnd?: number;
   area?: number;
   photos?: ActivityPhoto[];
+  notes?: ActivityNote[];
 }
 
 interface PrepTask {
@@ -630,6 +638,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
     initialTask?.activities || INITIAL_ACTIVITIES.map(a => ({ ...a }))
   );
   const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
+  const [historyActivityId, setHistoryActivityId] = useState<string | null>(null);
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -751,6 +760,30 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
     }));
   };
 
+  const handleAddNote = (activityId: string, text: string) => {
+    if (!text.trim()) return;
+    const newNote: ActivityNote = {
+      id: Math.random().toString(36).substr(2, 9),
+      text,
+      timestamp: new Date().toISOString()
+    };
+    setActivities(prev => prev.map(a => {
+      if (a.id === activityId) {
+        return { ...a, notes: [...(a.notes || []), newNote] };
+      }
+      return a;
+    }));
+  };
+
+  const handleDeleteNote = (activityId: string, noteId: string) => {
+    setActivities(prev => prev.map(a => {
+      if (a.id === activityId) {
+        return { ...a, notes: a.notes?.filter(n => n.id !== noteId) };
+      }
+      return a;
+    }));
+  };
+
   const handleManualDateChange = (id: string, field: 'startTime' | 'endTime', dateStr: string) => {
     if (!dateStr) return;
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -766,11 +799,11 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
 
   const handleManualTimeChange = (id: string, field: 'startTime' | 'endTime', timeStr: string) => {
     if (!timeStr) return;
-    const [hours, minutes] = timeStr.split(':').map(Number);
+    const [hours, minutes, seconds = 0] = timeStr.split(':').map(Number);
     setActivities(prev => prev.map(a => {
       if (a.id === id) {
         const newDate = a[field] ? new Date(a[field]!) : new Date();
-        newDate.setHours(hours, minutes, 0, 0);
+        newDate.setHours(hours, minutes, seconds, 0);
         return { ...a, [field]: newDate, isTimerRunning: false };
       }
       return a;
@@ -822,11 +855,11 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
 
   const handleManualAccessoryTimeChange = (id: string, field: 'accessoryChangeStartTime' | 'accessoryChangeEndTime', timeStr: string) => {
     if (!timeStr) return;
-    const [hours, minutes] = timeStr.split(':').map(Number);
+    const [hours, minutes, seconds = 0] = timeStr.split(':').map(Number);
     setActivities(prev => prev.map(a => {
       if (a.id === id) {
         const newDate = a[field] ? new Date(a[field]!) : new Date();
-        newDate.setHours(hours, minutes, 0, 0);
+        newDate.setHours(hours, minutes, seconds, 0);
         return { ...a, [field]: newDate, isAccessoryTimerRunning: false };
       }
       return a;
@@ -841,6 +874,13 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
     const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
     const s = (diff % 60).toString().padStart(2, '0');
     return `${h}:${m}:${s}`;
+  };
+
+  const getDurationInHours = (start?: Date, end?: Date, isRunning?: boolean) => {
+    if (!start) return '0.00';
+    const endTime = isRunning ? now : (end || start);
+    const diff = Math.max(0, (endTime.getTime() - start.getTime()) / (1000 * 3600));
+    return diff.toFixed(2);
   };
   
   const today = new Date().toISOString().split('T')[0];
@@ -1119,30 +1159,96 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                     )}
 
                     {isAvailable && expandedActivityId !== act.id && (
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setExpandedActivityId(act.id); }}
-                        className="w-full mt-2 py-3.5 bg-[#FF8C00]/10 text-[#FF8C00] font-bold rounded-xl hover:bg-[#FF8C00] hover:text-black transition-colors border border-[#FF8C00]/20 hover:border-transparent"
-                      >
-                        Ver Detalles
-                      </button>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setExpandedActivityId(act.id);
+                            setTimeout(() => {
+                              document.getElementById(`notes-${act.id}`)?.scrollIntoView({ behavior: 'smooth' });
+                            }, 100);
+                          }}
+                          className="col-span-1 py-3.5 bg-white/5 text-white/70 font-bold rounded-xl hover:bg-white/10 transition-colors border border-white/10 flex items-center justify-center gap-2"
+                        >
+                          <FileText className="w-4 h-4" />
+                          Nota
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setHistoryActivityId(act.id); }}
+                          className="col-span-1 py-3.5 bg-white/5 text-white/70 font-bold rounded-xl hover:bg-white/10 transition-colors border border-white/10 flex items-center justify-center gap-2"
+                        >
+                          <History className="w-4 h-4" />
+                          Historial
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setExpandedActivityId(act.id); }}
+                          className="col-span-1 py-3.5 bg-[#FF8C00]/10 text-[#FF8C00] font-bold rounded-xl hover:bg-[#FF8C00] hover:text-black transition-colors border border-[#FF8C00]/20 hover:border-transparent"
+                        >
+                          Ver Detalles
+                        </button>
+                      </div>
                     )}
 
                     {isInProgress && expandedActivityId !== act.id && (
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setExpandedActivityId(act.id); }}
-                        className="w-full mt-2 py-3.5 bg-[#FF8C00] text-black font-bold rounded-xl hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20"
-                      >
-                        Registrar Valores
-                      </button>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setExpandedActivityId(act.id);
+                            setTimeout(() => {
+                              document.getElementById(`notes-${act.id}`)?.scrollIntoView({ behavior: 'smooth' });
+                            }, 100);
+                          }}
+                          className="col-span-1 py-3.5 bg-white/5 text-white/70 font-bold rounded-xl hover:bg-white/10 transition-colors border border-white/10 flex items-center justify-center gap-2"
+                        >
+                          <FileText className="w-4 h-4" />
+                          Nota
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setHistoryActivityId(act.id); }}
+                          className="col-span-1 py-3.5 bg-white/5 text-white/70 font-bold rounded-xl hover:bg-white/10 transition-colors border border-white/10 flex items-center justify-center gap-2"
+                        >
+                          <History className="w-4 h-4" />
+                          Historial
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setExpandedActivityId(act.id); }}
+                          className="col-span-1 py-3.5 bg-[#FF8C00] text-black font-bold rounded-xl hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20"
+                        >
+                          Registrar
+                        </button>
+                      </div>
                     )}
 
                     {isFinished && expandedActivityId !== act.id && (
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setExpandedActivityId(act.id); }}
-                        className="w-full mt-2 py-3.5 bg-white/5 text-white/70 font-bold rounded-xl hover:bg-white/10 transition-colors border border-white/10"
-                      >
-                        Ver Registro
-                      </button>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setExpandedActivityId(act.id);
+                            setTimeout(() => {
+                              document.getElementById(`notes-${act.id}`)?.scrollIntoView({ behavior: 'smooth' });
+                            }, 100);
+                          }}
+                          className="col-span-1 py-3.5 bg-white/5 text-white/70 font-bold rounded-xl hover:bg-white/10 transition-colors border border-white/10 flex items-center justify-center gap-2"
+                        >
+                          <FileText className="w-4 h-4" />
+                          Nota
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setHistoryActivityId(act.id); }}
+                          className="col-span-1 py-3.5 bg-white/5 text-white/70 font-bold rounded-xl hover:bg-white/10 transition-colors border border-white/10 flex items-center justify-center gap-2"
+                        >
+                          <History className="w-4 h-4" />
+                          Historial
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setExpandedActivityId(act.id); }}
+                          className="col-span-1 py-3.5 bg-white/5 text-white/70 font-bold rounded-xl hover:bg-white/10 transition-colors border border-white/10"
+                        >
+                          Ver
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -1157,14 +1263,14 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                       >
                         <div className="pt-6 border-t border-white/10 mt-4 space-y-6" onClick={(e) => e.stopPropagation()}>
                           {/* 2. Control de Tiempos */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-6">
                             {/* Duración de Labor */}
-                            <div className="bg-[#121212] p-5 rounded-2xl border border-white/5">
-                              <h4 className="text-white/70 font-medium mb-4 flex items-center gap-2">
+                            <div className="bg-[#121212] p-5 rounded-2xl border border-white/5 space-y-4">
+                              <h4 className="text-white/70 font-medium flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-[#FF8C00]" />
                                 Duración de Labor
                               </h4>
-                              <div className="flex items-center gap-4">
+                              <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
                                 <button 
                                   onClick={() => toggleTimer(act.id)}
                                   disabled={act.state === 'finalizado'}
@@ -1179,47 +1285,54 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                   {act.isTimerRunning ? <Square className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
                                 </button>
 
-                                <div className="flex-1 space-y-1">
-                                  <label className="block text-[10px] text-white/40 uppercase font-bold tracking-wider">Inicio</label>
-                                  <div className="flex flex-col gap-1">
-                                    <input 
-                                      type="date" 
-                                      value={act.startTime ? act.startTime.toISOString().split('T')[0] : ''}
-                                      onChange={(e) => handleManualDateChange(act.id, 'startTime', e.target.value)}
-                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
-                                    />
-                                    <input 
-                                      type="time" 
-                                      value={act.startTime ? act.startTime.toTimeString().slice(0, 5) : ''}
-                                      onChange={(e) => handleManualTimeChange(act.id, 'startTime', e.target.value)}
-                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
-                                    />
+                                <div className="flex-1 grid grid-cols-2 gap-4 w-full">
+                                  <div className="space-y-1">
+                                    <label className="block text-[10px] text-white/40 uppercase font-bold tracking-wider">Inicio</label>
+                                    <div className="flex flex-col gap-1">
+                                      <input 
+                                        type="date" 
+                                        value={act.startTime ? act.startTime.toISOString().split('T')[0] : ''}
+                                        onChange={(e) => handleManualDateChange(act.id, 'startTime', e.target.value)}
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                      />
+                                      <input 
+                                        type="time" 
+                                        step="1"
+                                        value={act.startTime ? act.startTime.toTimeString().slice(0, 8) : ''}
+                                        onChange={(e) => handleManualTimeChange(act.id, 'startTime', e.target.value)}
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-1">
+                                    <label className="block text-[10px] text-white/40 uppercase font-bold tracking-wider">Fin</label>
+                                    <div className="flex flex-col gap-1">
+                                      <input 
+                                        type="date" 
+                                        value={act.endTime ? act.endTime.toISOString().split('T')[0] : ''}
+                                        onChange={(e) => handleManualDateChange(act.id, 'endTime', e.target.value)}
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                      />
+                                      <input 
+                                        type="time" 
+                                        step="1"
+                                        value={act.endTime ? act.endTime.toTimeString().slice(0, 8) : ''}
+                                        onChange={(e) => handleManualTimeChange(act.id, 'endTime', e.target.value)}
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                      />
+                                    </div>
                                   </div>
                                 </div>
 
-                                <div className="flex-1 space-y-1">
-                                  <label className="block text-[10px] text-white/40 uppercase font-bold tracking-wider">Fin</label>
-                                  <div className="flex flex-col gap-1">
-                                    <input 
-                                      type="date" 
-                                      value={act.endTime ? act.endTime.toISOString().split('T')[0] : ''}
-                                      onChange={(e) => handleManualDateChange(act.id, 'endTime', e.target.value)}
-                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
-                                    />
-                                    <input 
-                                      type="time" 
-                                      value={act.endTime ? act.endTime.toTimeString().slice(0, 5) : ''}
-                                      onChange={(e) => handleManualTimeChange(act.id, 'endTime', e.target.value)}
-                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="text-right flex flex-col justify-center min-w-[80px]">
-                                  <div className="text-xl font-mono font-bold text-white tracking-tight leading-none">
+                                <div className="text-right flex flex-col justify-center min-w-[120px] bg-black/30 p-3 rounded-xl border border-white/5">
+                                  <div className="text-2xl font-mono font-bold text-white tracking-tight leading-none">
                                     {formatDuration(act.startTime, act.endTime, act.isTimerRunning)}
                                   </div>
-                                  <div className="text-[10px] text-[#FF8C00] uppercase tracking-wider font-bold mt-1">
+                                  <div className="text-[10px] text-white/40 font-mono mt-1">
+                                    {getDurationInHours(act.startTime, act.endTime, act.isTimerRunning)} <span className="text-[8px]">HORAS</span>
+                                  </div>
+                                  <div className="text-[10px] text-[#FF8C00] uppercase tracking-wider font-bold mt-2 pt-2 border-t border-white/5">
                                     {act.isTimerRunning ? 'En Ejecución' : (act.state === 'finalizado' ? 'Finalizado' : 'Detenido')}
                                   </div>
                                 </div>
@@ -1227,12 +1340,12 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                             </div>
 
                             {/* Cambio de Accesorio */}
-                            <div className="bg-[#121212] p-5 rounded-2xl border border-white/5">
-                              <h4 className="text-white/70 font-medium mb-4 flex items-center gap-2">
+                            <div className="bg-[#121212] p-5 rounded-2xl border border-white/5 space-y-4">
+                              <h4 className="text-white/70 font-medium flex items-center gap-2">
                                 <Wrench className="w-4 h-4 text-[#FF8C00]" />
                                 Cambio de Accesorio
                               </h4>
-                              <div className="flex items-center gap-4">
+                              <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
                                 <button 
                                   onClick={() => toggleAccessoryTimer(act.id)}
                                   className={clsx(
@@ -1245,50 +1358,57 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                   {act.isAccessoryTimerRunning ? <Square className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
                                 </button>
 
-                                <div className="flex-1 space-y-1">
-                                  <label className="block text-[10px] text-white/40 uppercase font-bold tracking-wider">Inicio</label>
-                                  <div className="flex flex-col gap-1">
-                                    <input 
-                                      type="date" 
-                                      value={act.accessoryChangeStartTime ? act.accessoryChangeStartTime.toISOString().split('T')[0] : ''}
-                                      onChange={(e) => handleManualAccessoryDateChange(act.id, 'accessoryChangeStartTime', e.target.value)}
-                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
-                                    />
-                                    <input 
-                                      type="time" 
-                                      value={act.accessoryChangeStartTime ? act.accessoryChangeStartTime.toTimeString().slice(0, 5) : ''}
-                                      onChange={(e) => handleManualAccessoryTimeChange(act.id, 'accessoryChangeStartTime', e.target.value)}
-                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
-                                    />
+                                <div className="flex-1 grid grid-cols-2 gap-4 w-full">
+                                  <div className="space-y-1">
+                                    <label className="block text-[10px] text-white/40 uppercase font-bold tracking-wider">Inicio</label>
+                                    <div className="flex flex-col gap-1">
+                                      <input 
+                                        type="date" 
+                                        value={act.accessoryChangeStartTime ? act.accessoryChangeStartTime.toISOString().split('T')[0] : ''}
+                                        onChange={(e) => handleManualAccessoryDateChange(act.id, 'accessoryChangeStartTime', e.target.value)}
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                      />
+                                      <input 
+                                        type="time" 
+                                        step="1"
+                                        value={act.accessoryChangeStartTime ? act.accessoryChangeStartTime.toTimeString().slice(0, 8) : ''}
+                                        onChange={(e) => handleManualAccessoryTimeChange(act.id, 'accessoryChangeStartTime', e.target.value)}
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-1">
+                                    <label className="block text-[10px] text-white/40 uppercase font-bold tracking-wider">Fin</label>
+                                    <div className="flex flex-col gap-1">
+                                      <input 
+                                        type="date" 
+                                        value={act.accessoryChangeEndTime ? act.accessoryChangeEndTime.toISOString().split('T')[0] : ''}
+                                        onChange={(e) => handleManualAccessoryDateChange(act.id, 'accessoryChangeEndTime', e.target.value)}
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                      />
+                                      <input 
+                                        type="time" 
+                                        step="1"
+                                        value={act.accessoryChangeEndTime ? act.accessoryChangeEndTime.toTimeString().slice(0, 8) : ''}
+                                        onChange={(e) => handleManualAccessoryTimeChange(act.id, 'accessoryChangeEndTime', e.target.value)}
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                      />
+                                    </div>
                                   </div>
                                 </div>
 
-                                <div className="flex-1 space-y-1">
-                                  <label className="block text-[10px] text-white/40 uppercase font-bold tracking-wider">Fin</label>
-                                  <div className="flex flex-col gap-1">
-                                    <input 
-                                      type="date" 
-                                      value={act.accessoryChangeEndTime ? act.accessoryChangeEndTime.toISOString().split('T')[0] : ''}
-                                      onChange={(e) => handleManualAccessoryDateChange(act.id, 'accessoryChangeEndTime', e.target.value)}
-                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
-                                    />
-                                    <input 
-                                      type="time" 
-                                      value={act.accessoryChangeEndTime ? act.accessoryChangeEndTime.toTimeString().slice(0, 5) : ''}
-                                      onChange={(e) => handleManualAccessoryTimeChange(act.id, 'accessoryChangeEndTime', e.target.value)}
-                                      className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="text-right flex flex-col justify-center min-w-[80px]">
+                                <div className="text-right flex flex-col justify-center min-w-[120px] bg-black/30 p-3 rounded-xl border border-white/5">
                                   <div className={clsx(
-                                    "text-xl font-mono font-bold tracking-tight leading-none",
+                                    "text-2xl font-mono font-bold tracking-tight leading-none",
                                     act.isAccessoryTimerRunning ? "text-white" : "text-white/50"
                                   )}>
                                     {formatDuration(act.accessoryChangeStartTime, act.accessoryChangeEndTime, act.isAccessoryTimerRunning)}
                                   </div>
-                                  <div className="text-[10px] text-white/30 uppercase tracking-wider font-bold mt-1">
+                                  <div className="text-[10px] text-white/40 font-mono mt-1">
+                                    {getDurationInHours(act.accessoryChangeStartTime, act.accessoryChangeEndTime, act.isAccessoryTimerRunning)} <span className="text-[8px]">HORAS</span>
+                                  </div>
+                                  <div className="text-[10px] text-white/30 uppercase tracking-wider font-bold mt-2 pt-2 border-t border-white/5">
                                     {act.isAccessoryTimerRunning ? 'En Ejecución' : 'Inactivo'}
                                   </div>
                                 </div>
@@ -1419,54 +1539,136 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                           </div>
 
                           {/* 5. Evidencia y Cierre */}
-                          <div className="space-y-4 pt-4">
-                            {/* Historial de Fotos */}
-                            {act.photos && act.photos.length > 0 && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {act.photos.map(photo => (
-                                  <div key={photo.id} className="bg-black/40 border border-white/5 rounded-xl overflow-hidden flex flex-col">
-                                    <div className="relative aspect-video">
-                                      <img src={photo.url} alt="Evidencia" className="w-full h-full object-cover" />
-                                      <button 
-                                        onClick={() => handleDeletePhoto(act.id, photo.id)}
-                                        className="absolute top-2 right-2 p-2 bg-black/60 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2">
-                                        <span className="text-[10px] text-white/60">
-                                          {new Date(photo.timestamp).toLocaleString()}
+                          <div className="space-y-6 pt-4">
+                            {/* Notas de la Actividad */}
+                            <div id={`notes-${act.id}`} className="bg-[#121212] p-5 rounded-2xl border border-white/5 space-y-4">
+                              <h4 className="text-white/70 font-medium flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-[#FF8C00]" />
+                                Notas de la Actividad
+                              </h4>
+                              
+                              {/* Lista de Notas */}
+                              <div className="space-y-3">
+                                {act.notes && act.notes.length > 0 ? (
+                                  act.notes.map(note => (
+                                    <div key={note.id} className="bg-black/40 border border-white/5 rounded-xl p-4 relative group">
+                                      <p className="text-sm text-white/80 leading-relaxed pr-8">{note.text}</p>
+                                      <div className="mt-2 flex items-center justify-between">
+                                        <span className="text-[10px] text-white/40 font-mono">
+                                          {new Date(note.timestamp).toLocaleString()}
                                         </span>
+                                        <button 
+                                          onClick={() => handleDeleteNote(act.id, note.id)}
+                                          className="text-red-500/50 hover:text-red-500 transition-colors p-1"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
                                       </div>
                                     </div>
-                                    <div className="p-3">
-                                      <textarea
-                                        placeholder="Agregar observación..."
-                                        value={photo.observation}
-                                        onChange={(e) => handlePhotoObservationChange(act.id, photo.id, e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#FF8C00]/50 resize-none h-16"
-                                      />
-                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="py-8 flex flex-col items-center justify-center gap-2 border border-dashed border-white/5 rounded-xl">
+                                    <FileText className="w-6 h-6 text-white/10" />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/20">Sin notas registradas</span>
                                   </div>
-                                ))}
+                                )}
                               </div>
-                            )}
+
+                              {/* Input para Nueva Nota */}
+                              <div className="pt-2">
+                                <div className="relative">
+                                  <textarea
+                                    id={`new-note-input-${act.id}`}
+                                    placeholder="Escribir nueva nota aquí..."
+                                    className="w-full bg-black border border-white/10 rounded-xl p-4 pr-14 text-white text-sm focus:outline-none focus:border-[#FF8C00]/50 min-h-[80px] resize-none"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        const target = e.target as HTMLTextAreaElement;
+                                        handleAddNote(act.id, target.value);
+                                        target.value = '';
+                                      }
+                                    }}
+                                  />
+                                  <button 
+                                    onClick={() => {
+                                      const input = document.getElementById(`new-note-input-${act.id}`) as HTMLTextAreaElement;
+                                      handleAddNote(act.id, input.value);
+                                      input.value = '';
+                                    }}
+                                    className="absolute bottom-3 right-3 p-2 bg-[#FF8C00] text-black rounded-lg hover:bg-[#FF8C00]/90 transition-colors"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <p className="text-[10px] text-white/30 mt-2 text-right">Presiona Enter para agregar</p>
+                              </div>
+                            </div>
+
+                            {/* Nueva Sección de Evidencia Fotográfica */}
+                            <div className="bg-[#0D0D0D] border border-white/5 rounded-2xl p-5 space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF8C00]/60">
+                                  Evidencia Fotográfica
+                                </h4>
+                                <label className="p-2 bg-[#FF8C00]/10 text-[#FF8C00] rounded-xl hover:bg-[#FF8C00]/20 transition-colors cursor-pointer">
+                                  <input 
+                                    type="file" 
+                                    id={`photo-upload-${act.id}`}
+                                    accept="image/*" 
+                                    capture="environment" 
+                                    className="hidden" 
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handlePhotoUpload(act.id, file);
+                                    }}
+                                  />
+                                  <Camera className="w-5 h-5" />
+                                </label>
+                              </div>
+
+                              {/* Historial de Fotos */}
+                              {act.photos && act.photos.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  {act.photos.map(photo => (
+                                    <div key={photo.id} className="bg-black/40 border border-white/5 rounded-xl overflow-hidden flex flex-col">
+                                      <div className="relative aspect-video">
+                                        <img src={photo.url} alt="Evidencia" className="w-full h-full object-cover" />
+                                        <button 
+                                          onClick={() => handleDeletePhoto(act.id, photo.id)}
+                                          className="absolute top-2 right-2 p-2 bg-black/60 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2">
+                                          <span className="text-[10px] text-white/60">
+                                            {new Date(photo.timestamp).toLocaleString()}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="p-3">
+                                        <textarea
+                                          placeholder="Agregar observación..."
+                                          value={photo.observation}
+                                          onChange={(e) => handlePhotoObservationChange(act.id, photo.id, e.target.value)}
+                                          className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#FF8C00]/50 resize-none h-16"
+                                        />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <label 
+                                  htmlFor={`photo-upload-${act.id}`}
+                                  className="border-2 border-dashed border-white/5 rounded-2xl py-12 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-white/5 transition-colors"
+                                >
+                                  <ImageIcon className="w-8 h-8 text-white/10" />
+                                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">Sin Fotos - Click para capturar</span>
+                                </label>
+                              )}
+                            </div>
 
                             <div className="flex flex-col sm:flex-row gap-3">
-                              <label className="flex-1 bg-[#121212] border border-[#FF8C00]/30 text-[#FF8C00] py-4 rounded-xl font-bold hover:bg-[#FF8C00]/10 transition-colors flex items-center justify-center gap-2 cursor-pointer">
-                                <input 
-                                  type="file" 
-                                  accept="image/*" 
-                                  capture="environment" 
-                                  className="hidden" 
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handlePhotoUpload(act.id, file);
-                                  }}
-                                />
-                                <Camera className="w-5 h-5" />
-                                Tomar Foto
-                              </label>
                               <button 
                                 onClick={() => saveProgress()}
                                 className="flex-1 bg-[#121212] border border-white/10 text-white py-4 rounded-xl font-bold hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
@@ -1495,8 +1697,141 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
               );
             })}
           </div>
+
+          {/* Botón Finalizar Preparación */}
+          {activities.every(a => a.state === 'finalizado') && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mt-10 p-8 bg-[#FF8C00]/5 rounded-[2.5rem] border border-[#FF8C00]/20 text-center space-y-6"
+            >
+              <div className="w-20 h-20 bg-[#FF8C00] rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-[#FF8C00]/30">
+                <CheckCircle2 className="w-10 h-10 text-black" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold text-white tracking-tight">¡Labor Completada!</h3>
+                <p className="text-white/50 text-sm max-w-xs mx-auto">
+                  Todas las actividades de preparación de tierra para esta sección han sido finalizadas con éxito.
+                </p>
+              </div>
+              <button 
+                onClick={() => onGoBack()}
+                className="w-full bg-[#FF8C00] text-black py-5 rounded-2xl font-bold text-lg hover:bg-[#FF8C00]/90 transition-all shadow-xl shadow-[#FF8C00]/20 flex items-center justify-center gap-3"
+              >
+                Finalizar Preparación de Tierra
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </motion.div>
+          )}
         </motion.div>
       )}
+
+      {/* Modal de Historial */}
+      <AnimatePresence>
+        {historyActivityId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setHistoryActivityId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-[#121212] w-full max-w-2xl max-h-[80vh] rounded-3xl overflow-hidden flex flex-col border border-white/10 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
+                <div>
+                  <h3 className="text-xl font-bold text-white">Historial de Actividad</h3>
+                  <p className="text-sm text-white/40">{activities.find(a => a.id === historyActivityId)?.name}</p>
+                </div>
+                <button 
+                  onClick={() => setHistoryActivityId(null)}
+                  className="p-2 hover:bg-white/10 rounded-full text-white/50 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                {/* Notas */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#FF8C00]" />
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-[#FF8C00]">Notas Registradas</h4>
+                  </div>
+                  <div className="space-y-3">
+                    {activities.find(a => a.id === historyActivityId)?.notes?.length ? (
+                      activities.find(a => a.id === historyActivityId)?.notes?.map(note => (
+                        <div key={note.id} className="bg-black/40 border border-white/5 rounded-2xl p-4">
+                          <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">
+                            {note.text}
+                          </p>
+                          <div className="mt-2 text-[10px] text-white/40 font-mono">
+                            {new Date(note.timestamp).toLocaleString()}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="bg-black/40 border border-white/5 rounded-2xl p-4 min-h-[60px] flex items-center justify-center">
+                        <p className="text-sm text-white/20 italic">No hay notas registradas.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Fotos */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-[#FF8C00]" />
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-[#FF8C00]">Evidencia Fotográfica</h4>
+                  </div>
+                  {activities.find(a => a.id === historyActivityId)?.photos?.length ? (
+                    <div className="grid grid-cols-1 gap-6">
+                      {activities.find(a => a.id === historyActivityId)?.photos?.map((photo, idx) => (
+                        <div key={photo.id} className="bg-black/40 border border-white/5 rounded-2xl overflow-hidden">
+                          <div className="aspect-video relative">
+                            <img src={photo.url} alt={`Evidencia ${idx + 1}`} className="w-full h-full object-cover" />
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                              <span className="text-[10px] font-mono text-white/60">
+                                {new Date(photo.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                          {photo.observation && (
+                            <div className="p-4 border-t border-white/5">
+                              <p className="text-xs text-white/60 italic leading-relaxed">
+                                "{photo.observation}"
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-black/40 border border-white/5 rounded-2xl py-12 flex flex-col items-center justify-center gap-3">
+                      <ImageIcon className="w-8 h-8 text-white/10" />
+                      <span className="text-xs text-white/20">Sin evidencia fotográfica</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-6 bg-black/20 border-t border-white/10">
+                <button 
+                  onClick={() => setHistoryActivityId(null)}
+                  className="w-full py-4 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10 transition-colors border border-white/10"
+                >
+                  Cerrar Historial
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
