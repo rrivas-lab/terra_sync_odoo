@@ -92,6 +92,17 @@ interface Vehicle {
   fecha_finalizacion?: string;
 }
 
+interface FuelRecord {
+  id: string;
+  fecha: string;
+  equipo: string;
+  placa: string;
+  tipo: 'Tractor' | 'Camioneta' | 'Maquinaria Pesada' | 'Generador';
+  volumen: number;
+  operador: string;
+  estado: 'Finalizado' | 'Borrador';
+}
+
 // --- Mock Data ---
 
 const MOCK_CHOFERES = [
@@ -112,6 +123,59 @@ const MOCK_COMPRAS: Record<string, string[]> = {
 const MOCK_FINCAS = ['Hacienda Puricaure', 'Hacienda El Paraíso', 'Finca La Esperanza', 'Finca San José'];
 const MOCK_SEMILLEROS = ['1', '2', '3', '4', '5', '6'];
 const MOCK_DESPACHADORES = ['Miguel Ángel', 'Roberto Carlos', 'Ana María', 'Luis Fernando'];
+
+const MOCK_FUEL_RECORDS: FuelRecord[] = [
+  {
+    id: 'HPR-FO-PRO-007',
+    fecha: '2024-03-20',
+    equipo: 'John Deere 6125J',
+    placa: 'TRACT-001',
+    tipo: 'Tractor',
+    volumen: 45.5,
+    operador: 'Juan Pérez',
+    estado: 'Finalizado'
+  },
+  {
+    id: 'HPR-FO-PRO-008',
+    fecha: '2024-03-20',
+    equipo: 'Toyota Hilux',
+    placa: 'PICK-042',
+    tipo: 'Camioneta',
+    volumen: 60.0,
+    operador: 'Carlos Rodríguez',
+    estado: 'Finalizado'
+  },
+  {
+    id: 'HPR-FO-PRO-009',
+    fecha: '2024-03-19',
+    equipo: 'Caterpillar D6',
+    placa: 'MAQ-015',
+    tipo: 'Maquinaria Pesada',
+    volumen: 120.0,
+    operador: 'Mario Castañeda',
+    estado: 'Borrador'
+  },
+  {
+    id: 'HPR-FO-PRO-010',
+    fecha: '2024-03-18',
+    equipo: 'John Deere 5075E',
+    placa: 'TRACT-008',
+    tipo: 'Tractor',
+    volumen: 35.2,
+    operador: 'Roberto Gómez',
+    estado: 'Finalizado'
+  },
+  {
+    id: 'HPR-FO-PRO-007-005',
+    fecha: '2024-03-17',
+    equipo: 'Generador Cummins',
+    placa: 'GEN-002',
+    tipo: 'Generador',
+    volumen: 85.0,
+    operador: 'Luis Martínez',
+    estado: 'Finalizado'
+  }
+];
 
 // --- Components ---
 
@@ -1923,7 +1987,7 @@ const PrepView = ({ tasks, onGoHome, onNewPrep, onSelectTask }: { tasks: PrepTas
           </div>
           <input
             type="text"
-            placeholder="Buscar por ID, Lote u Operador..."
+            placeholder="Buscar por ID o Lote..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="block w-full pl-12 pr-4 py-4 bg-black border border-[#FF8C00]/50 rounded-2xl text-[#FF8C00] placeholder-white/20 focus:outline-none focus:border-[#FF8C00] focus:ring-1 focus:ring-[#FF8C00] transition-all"
@@ -1988,11 +2052,10 @@ const PrepView = ({ tasks, onGoHome, onNewPrep, onSelectTask }: { tasks: PrepTas
       {/* Table/List */}
       <div className="bg-[#0D0D0D] rounded-3xl shadow-xl overflow-hidden">
         {/* Table Header (Hidden on small screens, visible on md+) */}
-        <div className="hidden md:grid grid-cols-5 gap-4 p-6 border-b border-white/5 text-xs font-bold text-white/40 uppercase tracking-widest">
+        <div className="hidden md:grid grid-cols-4 gap-4 p-6 border-b border-white/5 text-xs font-bold text-white/40 uppercase tracking-widest">
           <div>ID Labor</div>
           <div>Lote</div>
           <div>Actividad</div>
-          <div>Operador</div>
           <div>Estado</div>
         </div>
 
@@ -2011,7 +2074,7 @@ const PrepView = ({ tasks, onGoHome, onNewPrep, onSelectTask }: { tasks: PrepTas
                 key={task.id}
                 onClick={() => onSelectTask(task)}
                 className={clsx(
-                  "grid grid-cols-1 md:grid-cols-5 gap-4 p-6 cursor-pointer transition-colors duration-200 hover:bg-[#161616] active:bg-[#161616]",
+                  "grid grid-cols-1 md:grid-cols-4 gap-4 p-6 cursor-pointer transition-colors duration-200 hover:bg-[#161616] active:bg-[#161616]",
                   index !== filteredTasks.length - 1 && "border-b border-white/5 shadow-[0_1px_0_0_rgba(255,255,255,0.02)]"
                 )}
               >
@@ -2039,14 +2102,6 @@ const PrepView = ({ tasks, onGoHome, onNewPrep, onSelectTask }: { tasks: PrepTas
                   <div>
                     <span className="md:hidden text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Actividad</span>
                     <span className="text-white/80">{task.actividad}</span>
-                  </div>
-                </div>
-
-                {/* Operador */}
-                <div className="flex items-center">
-                  <div>
-                    <span className="md:hidden text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Operador</span>
-                    <span className="text-white/80">{task.operador}</span>
                   </div>
                 </div>
 
@@ -3354,26 +3409,352 @@ const OperationView = ({
   );
 };
 
-const FuelPlaceholderView = ({ onGoHome }: { onGoHome: () => void }) => (
+const FuelListView = ({ 
+  records, 
+  onNew, 
+  onSelect, 
+  onGoHome 
+}: { 
+  records: FuelRecord[], 
+  onNew: () => void, 
+  onSelect: (record: FuelRecord) => void, 
+  onGoHome: () => void 
+}) => {
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState('Todos');
+  const [filterTime, setFilterTime] = useState('Todos');
+  const [specificDate, setSpecificDate] = useState('');
+  const [showMap, setShowMap] = useState(false);
+
+  const filteredRecords = records.filter(r => {
+    const matchesSearch = 
+      r.id.toLowerCase().includes(search.toLowerCase()) ||
+      r.equipo.toLowerCase().includes(search.toLowerCase()) ||
+      r.placa.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesType = filterType === 'Todos' || r.tipo === filterType;
+    
+    // Simple time filtering logic for mock data
+    let matchesTime = true;
+    if (filterTime === 'Hoy') {
+      matchesTime = r.fecha === '2024-03-20';
+    } else if (filterTime === 'Esta Semana') {
+      matchesTime = true; // Mock: all are this week
+    } else if (filterTime === 'Fecha') {
+      matchesTime = specificDate ? r.fecha === specificDate : true;
+    }
+
+    return matchesSearch && matchesType && matchesTime;
+  });
+
+  const equipmentTypes = ['Todos', 'Tractor', 'Camioneta', 'Maquinaria Pesada', 'Generador'];
+  const timeFilters = ['Todos', 'Hoy', 'Esta Semana', 'Fecha'];
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8 pb-24 px-4 pt-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={onGoHome}
+            className="p-3 bg-[#0D0D0D] text-[#FF8C00] rounded-2xl hover:bg-[#FF8C00]/10 transition-colors shadow-lg"
+            title="Volver al Inicio"
+          >
+            <Home className="w-6 h-6" />
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Control de Combustible</h1>
+            <div className="flex items-center gap-2 mt-2">
+              <MapPin className="w-4 h-4 text-[#FF8C00]" />
+              <span className="text-sm font-medium text-white/50 uppercase tracking-wider">Hacienda Puricaure</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onNew}
+            className="flex items-center justify-center gap-2 bg-[#FF8C00] text-black px-6 py-4 rounded-2xl font-bold hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20"
+          >
+            <Plus className="w-5 h-5" />
+            Cargar Nuevo Registro
+          </button>
+        </div>
+      </div>
+
+      {/* Search and Filters Card */}
+      <div className="bg-[#111111] p-6 rounded-3xl shadow-xl border border-white/5 space-y-6">
+        {/* Search Bar */}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-[#FF8C00]" />
+          </div>
+          <input
+            type="text"
+            placeholder="Buscar por ID, Placa o Equipo..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="block w-full pl-12 pr-4 py-4 bg-black border border-[#FF8C00]/50 rounded-2xl text-[#FF8C00] placeholder-white/20 focus:outline-none focus:border-[#FF8C00] focus:ring-1 focus:ring-[#FF8C00] transition-all"
+          />
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-4">
+          <select
+            value={filterTime}
+            onChange={(e) => setFilterTime(e.target.value)}
+            className={cn(
+              "bg-black border rounded-xl px-5 py-3 text-sm focus:outline-none transition-all appearance-none pr-12 relative",
+              filterTime !== 'Todos' 
+                ? "border-[#FF8C00]/50 text-[#FF8C00]" 
+                : "border-white/5 text-white/70 hover:border-white/10"
+            )}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
+          >
+            {timeFilters.map(f => <option key={f} value={f}>{f === 'Todos' ? 'Cualquier Fecha' : f}</option>)}
+          </select>
+
+          {filterTime === 'Fecha' && (
+            <input 
+              type="date"
+              value={specificDate}
+              onChange={(e) => setSpecificDate(e.target.value)}
+              className="bg-black border border-[#FF8C00]/50 rounded-xl px-5 py-3 text-sm text-[#FF8C00] outline-none [color-scheme:dark]"
+            />
+          )}
+
+          <select 
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className={cn(
+              "bg-black border rounded-xl px-5 py-3 text-sm focus:outline-none transition-all appearance-none pr-12 relative",
+              filterType !== 'Todos' 
+                ? "border-[#FF8C00]/50 text-[#FF8C00]" 
+                : "border-white/5 text-white/70 hover:border-white/10"
+            )}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
+          >
+            {equipmentTypes.map(t => <option key={t} value={t}>{t === 'Todos' ? 'Todos los Equipos' : t}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Table/List */}
+      <div className="bg-[#0D0D0D] rounded-3xl shadow-xl overflow-hidden">
+        {/* Table Header */}
+        <div className="hidden md:grid grid-cols-4 gap-4 p-6 border-b border-white/5 text-xs font-bold text-white/40 uppercase tracking-widest">
+          <div>ID Registro</div>
+          <div>Fecha</div>
+          <div>Equipo</div>
+          <div>Estado</div>
+        </div>
+
+        {/* Rows */}
+        <div className="flex flex-col">
+          {filteredRecords.length === 0 ? (
+            <div className="p-12 text-center flex flex-col items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                <Search className="w-8 h-8 text-white/20" />
+              </div>
+              <p className="text-white/60 text-lg">No se encontraron registros de combustible</p>
+            </div>
+          ) : (
+            filteredRecords.map((record, index) => (
+              <div
+                key={record.id}
+                onClick={() => onSelect(record)}
+                className={cn(
+                  "grid grid-cols-1 md:grid-cols-4 gap-4 p-6 cursor-pointer transition-colors duration-200 hover:bg-[#161616] active:bg-[#161616]",
+                  index !== filteredRecords.length - 1 && "border-b border-white/5 shadow-[0_1px_0_0_rgba(255,255,255,0.02)]"
+                )}
+              >
+                {/* ID */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+                    <Fuel className="w-5 h-5 text-white/50" />
+                  </div>
+                  <div>
+                    <span className="md:hidden text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">ID Registro</span>
+                    <span className="font-mono text-white font-medium">{record.id}</span>
+                  </div>
+                </div>
+                
+                {/* Fecha */}
+                <div className="flex items-center">
+                  <div>
+                    <span className="md:hidden text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Fecha</span>
+                    <span className="text-white/80">{record.fecha}</span>
+                  </div>
+                </div>
+
+                {/* Equipo */}
+                <div className="flex items-center">
+                  <div>
+                    <span className="md:hidden text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Equipo</span>
+                    <span className="text-white/80">{record.equipo}</span>
+                    <span className="text-[10px] font-black text-white/20 uppercase tracking-widest ml-2">{record.placa}</span>
+                  </div>
+                </div>
+
+                {/* Estado */}
+                <div className="flex items-center justify-between md:justify-start">
+                  <div>
+                    <span className="md:hidden text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Estado</span>
+                    <div className="flex items-center gap-2">
+                      {record.estado === 'Borrador' && (
+                        <div className="relative flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF8C00] opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-[#FF8C00] shadow-[0_0_8px_#FF8C00]"></span>
+                        </div>
+                      )}
+                      <span className={cn(
+                        "font-medium",
+                        record.estado === 'Finalizado' ? "text-emerald-500" : "text-[#FF8C00]"
+                      )}>
+                        {record.estado}
+                      </span>
+                      <span className="text-[#FF8C00] ml-2 font-mono text-sm">{record.volumen.toFixed(1)}L</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-white/20 md:hidden" />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Map Modal */}
+      <AnimatePresence>
+        {showMap && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+            onClick={() => setShowMap(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#0D0D0D] w-full max-w-5xl h-[80vh] rounded-[3rem] shadow-2xl border border-white/10 overflow-hidden flex flex-col"
+            >
+              <div className="p-8 border-b border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center">
+                    <MapPin className="w-6 h-6 text-[#FF8C00]" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-white tracking-tight uppercase">Mapa de Surtido</h3>
+                    <p className="text-xs font-bold text-[#FF8C00]/60 uppercase tracking-widest">Ubicación Geográfica de Operaciones</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowMap(false)}
+                  className="p-4 bg-white/5 text-white/40 rounded-2xl hover:bg-white/10 hover:text-white transition-all"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex-1 relative bg-[#121212] overflow-hidden">
+                {/* Simulated Map Background */}
+                <div className="absolute inset-0 opacity-20 pointer-events-none">
+                  <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#FF8C00 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+                </div>
+                
+                {/* Map Content */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative w-[80%] h-[80%] border border-white/5 rounded-[2rem] bg-[#0D0D0D]/50 backdrop-blur-sm overflow-hidden">
+                    {/* Simulated Farm Layout */}
+                    <div className="absolute inset-0 p-8 grid grid-cols-4 grid-rows-4 gap-4">
+                      {[...Array(16)].map((_, i) => (
+                        <div key={i} className="border border-white/5 rounded-xl bg-white/[0.02] flex items-center justify-center relative group">
+                          <span className="text-[8px] font-black text-white/10 uppercase tracking-widest">Lote {i + 1}</span>
+                          {/* Random Markers */}
+                          {[0, 3, 7, 12, 15].includes(i) && (
+                            <motion.div 
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="absolute"
+                            >
+                              <div className="relative">
+                                <div className="absolute -inset-4 bg-[#FF8C00]/20 rounded-full animate-ping" />
+                                <Fuel className="w-6 h-6 text-[#FF8C00] relative z-10 drop-shadow-[0_0_10px_rgba(255,140,0,0.5)]" />
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Map Overlay Info */}
+                <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end">
+                  <div className="bg-[#0D0D0D]/80 backdrop-blur-md p-6 rounded-3xl border border-white/10 shadow-2xl max-w-xs space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-[#FF8C00] animate-pulse" />
+                      <p className="text-xs font-black text-white uppercase tracking-widest">Puntos de Surtido Activos</p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-white/40 uppercase">Hacienda Puricaure</span>
+                        <span className="text-[#FF8C00] font-bold">5 Equipos</span>
+                      </div>
+                      <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div className="w-[60%] h-full bg-[#FF8C00]" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button className="p-4 bg-[#0D0D0D] text-white/60 rounded-2xl border border-white/5 hover:text-[#FF8C00] transition-colors">
+                      <Sun className="w-5 h-5" />
+                    </button>
+                    <button className="p-4 bg-[#0D0D0D] text-white/60 rounded-2xl border border-white/5 hover:text-[#FF8C00] transition-colors">
+                      <Maximize2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const FuelFormView = ({ 
+  record, 
+  onGoBack 
+}: { 
+  record: FuelRecord | null, 
+  onGoBack: () => void 
+}) => (
   <div className="max-w-4xl mx-auto px-4 pt-12 text-center space-y-12">
     <div className="flex items-center gap-4">
       <button 
-        onClick={onGoHome}
-        className="p-3 bg-[#0D0D0D] text-[#FF8C00] rounded-2xl hover:bg-[#FF8C00]/10 transition-colors shadow-lg"
-        title="Volver al Inicio"
+        onClick={onGoBack}
+        className="p-3 bg-[#0D0D0D] text-[#FF8C00] rounded-2xl hover:bg-[#FF8C00]/10 transition-colors shadow-lg border border-white/5"
       >
-        <Home className="w-6 h-6" />
+        <ArrowLeft className="w-6 h-6" />
       </button>
-      <h1 className="text-3xl font-bold tracking-tight text-white">Consumo Combustible</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-white">
+        {record ? `Detalle: ${record.id}` : 'Nuevo Registro de Combustible'}
+      </h1>
     </div>
 
     <div className="bg-[#0D0D0D] rounded-[3rem] p-16 border border-white/5 shadow-2xl space-y-8">
-      <div className="w-32 h-32 bg-[#FF8C00]/10 rounded-full flex items-center justify-center mx-auto animate-pulse">
+      <div className="w-32 h-32 bg-[#FF8C00]/10 rounded-full flex items-center justify-center mx-auto">
         <Fuel className="w-16 h-16 text-[#FF8C00]" />
       </div>
       
       <div className="space-y-4">
-        <h2 className="text-4xl font-bold text-white tracking-tight">Módulo de Control de Combustible</h2>
+        <h2 className="text-4xl font-bold text-white tracking-tight">Formulario de Registro</h2>
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF8C00]/20 rounded-full border border-[#FF8C00]/30">
           <Wrench className="w-4 h-4 text-[#FF8C00]" />
           <span className="text-xs font-black uppercase tracking-widest text-[#FF8C00]">En Construcción</span>
@@ -3381,21 +3762,21 @@ const FuelPlaceholderView = ({ onGoHome }: { onGoHome: () => void }) => (
       </div>
 
       <p className="text-white/40 max-w-md mx-auto leading-relaxed">
-        Estamos trabajando para integrar el sistema de monitoreo de combustible en tiempo real. Pronto podrás registrar abastecimientos y consultar rendimientos por maquinaria.
+        El formulario detallado para {record ? 'editar' : 'crear'} registros de combustible está siendo optimizado para la recolección de datos en campo.
       </p>
 
       <button 
-        onClick={onGoHome}
+        onClick={onGoBack}
         className="px-10 py-4 bg-[#FF8C00] text-black rounded-2xl font-bold hover:bg-[#FF8C00]/90 transition-all shadow-xl shadow-[#FF8C00]/20"
       >
-        Regresar al Dashboard
+        Regresar a la Lista
       </button>
     </div>
   </div>
 );
 
 export default function App() {
-  const [view, setView] = useState<'dashboard' | 'list' | 'form' | 'operation' | 'prep' | 'prep-form' | 'fuel'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'list' | 'form' | 'operation' | 'prep' | 'prep-form' | 'fuel' | 'fuel-form'>('dashboard');
   const [isOnline, setIsOnline] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([
     {
@@ -3493,6 +3874,8 @@ export default function App() {
     },
   ]);
   const [selectedPrepTask, setSelectedPrepTask] = useState<PrepTask | null>(null);
+  const [fuelRecords, setFuelRecords] = useState<FuelRecord[]>(MOCK_FUEL_RECORDS);
+  const [selectedFuelRecord, setSelectedFuelRecord] = useState<FuelRecord | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [isSigning, setIsSigning] = useState(false);
 
@@ -3675,7 +4058,18 @@ export default function App() {
               />
             )}
             {view === 'fuel' && (
-              <FuelPlaceholderView onGoHome={() => setView('dashboard')} />
+              <FuelListView 
+                records={fuelRecords}
+                onNew={() => { setSelectedFuelRecord(null); setView('fuel-form'); }}
+                onSelect={(record) => { setSelectedFuelRecord(record); setView('fuel-form'); }}
+                onGoHome={() => setView('dashboard')}
+              />
+            )}
+            {view === 'fuel-form' && (
+              <FuelFormView 
+                record={selectedFuelRecord}
+                onGoBack={() => setView('fuel')}
+              />
             )}
           </motion.div>
         </AnimatePresence>
