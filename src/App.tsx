@@ -28,7 +28,10 @@ import {
   WifiOff,
   Home,
   Sun,
-  Tractor
+  Tractor,
+  Lock,
+  Clock,
+  Circle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -519,22 +522,446 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep') => 
   );
 };
 
+type ActivityState = 'disponible' | 'bloqueado' | 'en_proceso' | 'finalizado';
+
+interface Activity {
+  id: string;
+  name: string;
+  state: ActivityState;
+  blockedBy?: string;
+  startTime?: Date;
+}
+
 interface PrepTask {
   id: string;
   lote: string;
+  loteId?: string;
+  bloqueId?: string;
+  seccionId?: string;
   actividad: string;
   operador: string;
   estado: 'En Proceso' | 'Finalizado' | 'Borrador';
+  activities?: Activity[];
 }
 
-const PrepView = ({ onGoHome }: { onGoHome: () => void }) => {
-  const [tasks] = useState<PrepTask[]>([
-    { id: 'HPR-PT-001', lote: 'Lote A-12', actividad: 'Arado Profundo', operador: 'Carlos Mendoza', estado: 'En Proceso' },
-    { id: 'HPR-PT-002', lote: 'Lote B-05', actividad: 'Rastreo', operador: 'Luis Fernando', estado: 'Finalizado' },
-    { id: 'HPR-PT-003', lote: 'Lote C-08', actividad: 'Nivelación', operador: 'José Ramírez', estado: 'Borrador' },
-    { id: 'HPR-PT-004', lote: 'Lote A-15', actividad: 'Subsolado', operador: 'Miguel Ángel', estado: 'En Proceso' },
-  ]);
+const HACIENDA_DATA = [
+  {
+    id: 'L-01',
+    nombre: 'Lote Norte',
+    tamano: '150 ha',
+    bloques: [
+      {
+        id: 'B-01-A',
+        nombre: 'Bloque A',
+        tamano: '50 ha',
+        secciones: [
+          { id: 'S-01-A-1', nombre: 'Sección 1', area: '25 ha' },
+          { id: 'S-01-A-2', nombre: 'Sección 2', area: '25 ha' },
+        ]
+      },
+      {
+        id: 'B-01-B',
+        nombre: 'Bloque B',
+        tamano: '100 ha',
+        secciones: [
+          { id: 'S-01-B-1', nombre: 'Sección 1', area: '50 ha' },
+          { id: 'S-01-B-2', nombre: 'Sección 2', area: '50 ha' },
+        ]
+      }
+    ]
+  },
+  {
+    id: 'L-02',
+    nombre: 'Lote Sur',
+    tamano: '200 ha',
+    bloques: [
+      {
+        id: 'B-02-A',
+        nombre: 'Bloque A',
+        tamano: '200 ha',
+        secciones: [
+          { id: 'S-02-A-1', nombre: 'Sección Única', area: '200 ha' }
+        ]
+      }
+    ]
+  }
+];
 
+const INITIAL_ACTIVITIES: Activity[] = [
+  { id: 'a1', name: 'Subsolado', state: 'disponible' },
+  { id: 'a2', name: 'Rastreo', state: 'bloqueado', blockedBy: 'Subsolado' },
+  { id: 'a3', name: 'Encamado', state: 'bloqueado', blockedBy: 'Rastreo' },
+  { id: 'a4', name: 'Trazado de Caminos', state: 'bloqueado', blockedBy: 'Encamado' },
+  { id: 'a5', name: 'Canales', state: 'bloqueado', blockedBy: 'Trazado de Caminos' },
+];
+
+const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => void, onConfirm: (task: PrepTask) => void, initialTask?: PrepTask | null }) => {
+  const [taskId] = useState(initialTask?.id || `HPR-PT-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`);
+  const [loteId, setLoteId] = useState(initialTask?.loteId || '');
+  const [bloqueId, setBloqueId] = useState(initialTask?.bloqueId || '');
+  const [seccionId, setSeccionId] = useState(initialTask?.seccionId || '');
+  const [isConfirmed, setIsConfirmed] = useState(!!initialTask);
+  const [activities, setActivities] = useState<Activity[]>(
+    initialTask?.activities || INITIAL_ACTIVITIES.map(a => ({ ...a }))
+  );
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const progress = Math.round((activities.filter(a => a.state === 'finalizado').length / activities.length) * 100);
+
+  const handleActivityAction = (id: string) => {
+    const newActs = [...activities];
+    const idx = newActs.findIndex(a => a.id === id);
+    const act = { ...newActs[idx] };
+
+    if (act.state === 'disponible') {
+      act.state = 'en_proceso';
+      act.startTime = new Date();
+    } else if (act.state === 'en_proceso') {
+      act.state = 'finalizado';
+      // Unlock next activity
+      const nextIdx = newActs.findIndex(a => a.blockedBy === act.name);
+      if (nextIdx !== -1 && newActs[nextIdx].state === 'bloqueado') {
+        newActs[nextIdx] = { ...newActs[nextIdx], state: 'disponible' };
+      }
+    }
+    newActs[idx] = act;
+    setActivities(newActs);
+
+    const inProgress = newActs.find(a => a.state === 'en_proceso');
+    const available = newActs.find(a => a.state === 'disponible');
+    const currentActName = inProgress ? inProgress.name : (available ? available.name : 'Completado');
+    const isAllFinished = newActs.every(a => a.state === 'finalizado');
+    const taskState = isAllFinished ? 'Finalizado' : (inProgress ? 'En Proceso' : 'Borrador');
+
+    const updatedTask: PrepTask = {
+      id: taskId,
+      lote: selectedLote?.nombre || 'Desconocido',
+      loteId: loteId,
+      bloqueId: bloqueId,
+      seccionId: seccionId,
+      actividad: currentActName,
+      operador: initialTask?.operador || 'Por asignar',
+      estado: taskState,
+      activities: newActs
+    };
+    onConfirm(updatedTask);
+  };
+
+  const formatDuration = (start?: Date) => {
+    if (!start) return '00:00:00';
+    const diff = Math.floor((now.getTime() - start.getTime()) / 1000);
+    const h = Math.floor(diff / 3600).toString().padStart(2, '0');
+    const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
+    const s = (diff % 60).toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  };
+  
+  const today = new Date().toISOString().split('T')[0];
+
+  const selectedLote = HACIENDA_DATA.find(l => l.id === loteId);
+  const selectedBloque = selectedLote?.bloques.find(b => b.id === bloqueId);
+  const selectedSeccion = selectedBloque?.secciones.find(s => s.id === seccionId);
+
+  const handleLoteChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setLoteId(e.target.value);
+    setBloqueId('');
+    setSeccionId('');
+  };
+
+  const handleBloqueChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setBloqueId(val);
+    if (val === 'ALL') {
+      setSeccionId('ALL');
+    } else {
+      setSeccionId('');
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-8 pb-24 px-4 pt-8">
+      {/* Top Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={onGoBack}
+            className="p-3 bg-[#0D0D0D] text-[#FF8C00] rounded-2xl hover:bg-[#FF8C00]/10 transition-colors shadow-lg"
+            title="Volver"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-[#FF8C00] font-mono">HPR-FO-PRO-001</h1>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-sm font-medium text-white/50 uppercase tracking-wider">Preparación de Tierra</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-3 bg-[#0D0D0D] px-5 py-3 rounded-2xl border border-white/5">
+          <Calendar className="w-5 h-5 text-[#FF8C00]" />
+          <input 
+            type="date" 
+            defaultValue={today}
+            className="bg-transparent text-white focus:outline-none font-medium"
+            disabled={isConfirmed}
+          />
+        </div>
+      </div>
+
+      {/* Formulario de Ubicación */}
+      {!isConfirmed && (
+        <div className="bg-[#0D0D0D] p-6 md:p-8 rounded-3xl shadow-xl border border-white/5 space-y-8 transition-all duration-500">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white flex items-center gap-3">
+              <MapPin className="w-6 h-6 text-[#FF8C00]" />
+              Ubicación de la Labor
+            </h2>
+          </div>
+
+          <div className="space-y-6">
+            {/* Lote */}
+            <div className="bg-black/40 p-6 rounded-2xl border border-white/5">
+              <label className="block text-white/70 text-sm font-medium mb-3">Lote Operativo</label>
+              <select 
+                value={loteId}
+                onChange={handleLoteChange}
+                className="w-full bg-[#111111] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#FF8C00]/50 focus:ring-1 focus:ring-[#FF8C00]/50 transition-all appearance-none text-lg"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 20px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px' }}
+              >
+                <option value="">Seleccione un Lote</option>
+                {HACIENDA_DATA.map(l => (
+                  <option key={l.id} value={l.id}>{l.nombre}</option>
+                ))}
+              </select>
+              {selectedLote && (
+                <div className="mt-3 flex items-center gap-2 text-[#FF8C00]/40">
+                  <span className="text-sm font-medium">Tamaño Lote: {selectedLote.tamano}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Bloque */}
+            <div className={clsx("bg-black/40 p-6 rounded-2xl border border-white/5 transition-opacity duration-300", !loteId && "opacity-50 pointer-events-none")}>
+              <label className="block text-white/70 text-sm font-medium mb-3">Bloque en Labor</label>
+              <select 
+                value={bloqueId}
+                onChange={handleBloqueChange}
+                disabled={!loteId}
+                className="w-full bg-[#111111] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#FF8C00]/50 focus:ring-1 focus:ring-[#FF8C00]/50 transition-all appearance-none text-lg disabled:opacity-50"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 20px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px' }}
+              >
+                <option value="">Seleccione un Bloque</option>
+                <option value="ALL">Todos los Bloques</option>
+                {selectedLote?.bloques.map(b => (
+                  <option key={b.id} value={b.id}>{b.nombre}</option>
+                ))}
+              </select>
+              {bloqueId === 'ALL' ? (
+                <div className="mt-3 flex items-center gap-2 text-[#FF8C00]/40">
+                  <span className="text-sm font-medium">Tamaño Total: {selectedLote?.tamano}</span>
+                </div>
+              ) : selectedBloque && (
+                <div className="mt-3 flex items-center gap-2 text-[#FF8C00]/40">
+                  <span className="text-sm font-medium">Tamaño Bloque: {selectedBloque.tamano}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Sección */}
+            <div className={clsx("bg-black/40 p-6 rounded-2xl border border-white/5 transition-opacity duration-300", !bloqueId && "opacity-50 pointer-events-none")}>
+              <label className="block text-white/70 text-sm font-medium mb-3">Sección en Labor</label>
+              <select 
+                value={seccionId}
+                onChange={(e) => setSeccionId(e.target.value)}
+                disabled={!bloqueId || bloqueId === 'ALL'}
+                className="w-full bg-[#111111] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#FF8C00]/50 focus:ring-1 focus:ring-[#FF8C00]/50 transition-all appearance-none text-lg disabled:opacity-50"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 20px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px' }}
+              >
+                <option value="">Seleccione una Sección</option>
+                <option value="ALL">Todas las Secciones</option>
+                {selectedBloque?.secciones.map(s => (
+                  <option key={s.id} value={s.id}>{s.nombre}</option>
+                ))}
+              </select>
+              {seccionId === 'ALL' ? (
+                <div className="mt-3 flex items-center gap-2 text-[#FF8C00]/40">
+                  <span className="text-sm font-medium">
+                    Área Total: {bloqueId === 'ALL' ? selectedLote?.tamano : selectedBloque?.tamano}
+                  </span>
+                </div>
+              ) : selectedSeccion && (
+                <div className="mt-3 flex items-center gap-2 text-[#FF8C00]/40">
+                  <span className="text-sm font-medium">Área de la Sección: {selectedSeccion.area}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Acción */}
+            <div className="pt-6 flex justify-center">
+              <button 
+                onClick={() => {
+                  setIsConfirmed(true);
+                  const inProgress = activities.find(a => a.state === 'en_proceso');
+                  const available = activities.find(a => a.state === 'disponible');
+                  const currentActName = inProgress ? inProgress.name : (available ? available.name : 'Completado');
+
+                  const newTask: PrepTask = {
+                    id: taskId,
+                    lote: selectedLote?.nombre || 'Desconocido',
+                    loteId: loteId,
+                    bloqueId: bloqueId,
+                    seccionId: seccionId,
+                    actividad: currentActName,
+                    operador: initialTask?.operador || 'Por asignar',
+                    estado: 'Borrador',
+                    activities: activities
+                  };
+                  onConfirm(newTask);
+                }}
+                disabled={!loteId || !bloqueId || !seccionId}
+                className="bg-[#FF8C00] text-black px-8 py-5 rounded-2xl font-bold text-lg hover:bg-[#FF8C00]/90 transition-all shadow-lg shadow-[#FF8C00]/20 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto flex items-center justify-center gap-3"
+              >
+                Confirmar Ubicación e Iniciar Labores
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Nivel 2: Actividades */}
+      {isConfirmed && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          {/* Cabecera Contraída Nivel 1 */}
+          <div className="bg-[#0D0D0D] p-5 rounded-2xl border border-white/5 shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                <span className="text-white/70"><span className="text-[#FF8C00] font-medium mr-1">Lote:</span>{selectedLote?.nombre}</span>
+                <span className="text-white/70"><span className="text-[#FF8C00] font-medium mr-1">Bloque:</span>{selectedBloque?.nombre || 'Todos'}</span>
+                <span className="text-white/70"><span className="text-[#FF8C00] font-medium mr-1">Sección:</span>{selectedSeccion?.nombre || 'Todas'}</span>
+              </div>
+              <button 
+                onClick={() => setIsConfirmed(false)} 
+                className="text-white/40 hover:text-white text-sm underline underline-offset-4 transition-colors"
+              >
+                Editar
+              </button>
+            </div>
+            
+            {/* Barra de progreso */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs font-medium">
+                <span className="text-white/50">Avance del Lote</span>
+                <span className="text-[#FF8C00]">{progress}% Completado</span>
+              </div>
+              <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  className="bg-[#FF8C00] h-full rounded-full" 
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de Actividades */}
+          <div className="flex flex-col gap-4">
+            {activities.map(act => {
+              const isBlocked = act.state === 'bloqueado';
+              const isAvailable = act.state === 'disponible';
+              const isInProgress = act.state === 'en_proceso';
+              const isFinished = act.state === 'finalizado';
+
+              return (
+                <div 
+                  key={act.id}
+                  onClick={() => {
+                    if (isAvailable) {
+                      // Simular apertura de Nivel 3 o selección
+                      handleActivityAction(act.id);
+                    }
+                  }}
+                  className={clsx(
+                    "p-5 rounded-2xl transition-all duration-300 flex flex-col gap-4 relative overflow-hidden",
+                    isBlocked && "bg-[#0D0D0D]/40 border border-white/5 opacity-60",
+                    isAvailable && "bg-[#0D0D0D] border border-[#FF8C00]/30 hover:shadow-[0_8px_30px_rgba(255,140,0,0.15)] hover:-translate-y-1 cursor-pointer",
+                    isInProgress && "bg-[#0D0D0D] border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.2)]",
+                    isFinished && "bg-black border border-white/10"
+                  )}
+                >
+                  {/* Glow effect for in progress */}
+                  {isInProgress && (
+                    <div className="absolute inset-0 bg-[#FF8C00]/5 animate-pulse" />
+                  )}
+
+                  <div className="flex justify-between items-center relative z-10">
+                    <div className="flex items-center gap-3">
+                      {isBlocked && <Lock className="w-5 h-5 text-white/40" />}
+                      {isFinished && <CheckCircle2 className="w-5 h-5 text-[#FF8C00]" />}
+                      {isInProgress && <Clock className="w-5 h-5 text-[#FF8C00] animate-pulse" />}
+                      {isAvailable && <Circle className="w-5 h-5 text-[#FF8C00]" />}
+                      <h3 className={clsx(
+                        "text-lg font-bold",
+                        isBlocked ? "text-white/50" : "text-white",
+                        isAvailable && "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]"
+                      )}>{act.name}</h3>
+                    </div>
+                    
+                    {isInProgress && (
+                      <div className="text-[#FF8C00] font-mono text-sm bg-[#FF8C00]/10 px-3 py-1.5 rounded-lg border border-[#FF8C00]/20">
+                        {formatDuration(act.startTime)}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative z-10">
+                    {isBlocked && act.blockedBy && (
+                      <p className="text-sm text-white/40 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                        Bloqueado por: {act.blockedBy}
+                      </p>
+                    )}
+
+                    {isAvailable && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleActivityAction(act.id); }}
+                        className="w-full mt-2 py-3.5 bg-[#FF8C00]/10 text-[#FF8C00] font-bold rounded-xl hover:bg-[#FF8C00] hover:text-black transition-colors border border-[#FF8C00]/20 hover:border-transparent"
+                      >
+                        Iniciar Labor
+                      </button>
+                    )}
+
+                    {isInProgress && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleActivityAction(act.id); }}
+                        className="w-full mt-2 py-3.5 bg-[#FF8C00] text-black font-bold rounded-xl hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20"
+                      >
+                        Registrar Valores
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
+const PrepView = ({ tasks, onGoHome, onNewPrep, onSelectTask }: { tasks: PrepTask[], onGoHome: () => void, onNewPrep: () => void, onSelectTask: (task: PrepTask) => void }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState<string>('Todos');
   const [filterActividad, setFilterActividad] = useState<string>('Todas');
@@ -577,7 +1004,10 @@ const PrepView = ({ onGoHome }: { onGoHome: () => void }) => {
           </div>
         </div>
         
-        <button className="flex items-center justify-center gap-2 bg-[#FF8C00] text-black px-6 py-4 rounded-2xl font-bold hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20">
+        <button 
+          onClick={onNewPrep}
+          className="flex items-center justify-center gap-2 bg-[#FF8C00] text-black px-6 py-4 rounded-2xl font-bold hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20"
+        >
           <Plus className="w-5 h-5" />
           Iniciar Nueva Labor
         </button>
@@ -678,7 +1108,7 @@ const PrepView = ({ onGoHome }: { onGoHome: () => void }) => {
             filteredTasks.map((task, index) => (
               <div 
                 key={task.id}
-                onClick={() => console.log(`Entrando al detalle de ${task.id}`)}
+                onClick={() => onSelectTask(task)}
                 className={clsx(
                   "grid grid-cols-1 md:grid-cols-5 gap-4 p-6 cursor-pointer transition-colors duration-200 hover:bg-[#161616] active:bg-[#161616]",
                   index !== filteredTasks.length - 1 && "border-b border-white/5 shadow-[0_1px_0_0_rgba(255,255,255,0.02)]"
@@ -2086,6 +2516,42 @@ export default function App() {
       fecha_finalizacion: '2024-03-18'
     }
   ]);
+  const [prepTasks, setPrepTasks] = useState<PrepTask[]>([
+    { 
+      id: 'HPR-PT-001', lote: 'Lote Norte', loteId: 'L-01', bloqueId: 'B-01-A', seccionId: 'S-01-A-1', 
+      actividad: 'Rastreo', operador: 'Carlos Mendoza', estado: 'En Proceso',
+      activities: [
+        { id: 'a1', name: 'Subsolado', state: 'finalizado' },
+        { id: 'a2', name: 'Rastreo', state: 'en_proceso', startTime: new Date(Date.now() - 3600000) },
+        { id: 'a3', name: 'Encamado', state: 'bloqueado', blockedBy: 'Rastreo' },
+        { id: 'a4', name: 'Trazado de Caminos', state: 'bloqueado', blockedBy: 'Encamado' },
+        { id: 'a5', name: 'Canales', state: 'bloqueado', blockedBy: 'Trazado de Caminos' },
+      ]
+    },
+    { 
+      id: 'HPR-PT-002', lote: 'Lote Sur', loteId: 'L-02', bloqueId: 'B-02-A', seccionId: 'S-02-A-1', 
+      actividad: 'Completado', operador: 'Luis Fernando', estado: 'Finalizado',
+      activities: [
+        { id: 'a1', name: 'Subsolado', state: 'finalizado' },
+        { id: 'a2', name: 'Rastreo', state: 'finalizado' },
+        { id: 'a3', name: 'Encamado', state: 'finalizado' },
+        { id: 'a4', name: 'Trazado de Caminos', state: 'finalizado' },
+        { id: 'a5', name: 'Canales', state: 'finalizado' },
+      ]
+    },
+    { 
+      id: 'HPR-PT-003', lote: 'Lote Norte', loteId: 'L-01', bloqueId: 'B-01-B', seccionId: 'S-01-B-2', 
+      actividad: 'Subsolado', operador: 'José Ramírez', estado: 'Borrador',
+      activities: [
+        { id: 'a1', name: 'Subsolado', state: 'disponible' },
+        { id: 'a2', name: 'Rastreo', state: 'bloqueado', blockedBy: 'Subsolado' },
+        { id: 'a3', name: 'Encamado', state: 'bloqueado', blockedBy: 'Rastreo' },
+        { id: 'a4', name: 'Trazado de Caminos', state: 'bloqueado', blockedBy: 'Encamado' },
+        { id: 'a5', name: 'Canales', state: 'bloqueado', blockedBy: 'Trazado de Caminos' },
+      ]
+    },
+  ]);
+  const [selectedPrepTask, setSelectedPrepTask] = useState<PrepTask | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [isSigning, setIsSigning] = useState(false);
 
@@ -2249,7 +2715,23 @@ export default function App() {
               />
             )}
             {view === 'prep' && (
-              <PrepView onGoHome={() => setView('dashboard')} />
+              <PrepView 
+                tasks={prepTasks} 
+                onGoHome={() => setView('dashboard')} 
+                onNewPrep={() => { setSelectedPrepTask(null); setView('prep-form'); }} 
+                onSelectTask={(task) => { setSelectedPrepTask(task); setView('prep-form'); }} 
+              />
+            )}
+            {view === 'prep-form' && (
+              <PrepFormView 
+                initialTask={selectedPrepTask}
+                onGoBack={() => setView('prep')} 
+                onConfirm={(newTask) => setPrepTasks(prev => {
+                  const exists = prev.find(t => t.id === newTask.id);
+                  if (exists) return prev.map(t => t.id === newTask.id ? newTask : t);
+                  return [newTask, ...prev];
+                })}
+              />
             )}
           </motion.div>
         </AnimatePresence>
