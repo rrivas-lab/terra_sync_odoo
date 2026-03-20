@@ -27,7 +27,8 @@ import {
   Wifi,
   WifiOff,
   Home,
-  Sun
+  Sun,
+  Tractor
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -372,7 +373,7 @@ const ElevatedSelect = ({ label, icon: Icon, value, onChange, options, disabled 
 
 // --- Views ---
 
-const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list') => void }) => {
+const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep') => void }) => {
   const [showFincaModal, setShowFincaModal] = useState(false);
   const [activeFinca, setActiveFinca] = useState('Hacienda Puricaure');
   const fincas = ['Hacienda Puricaure', 'Finca El Paraíso', 'Hacienda La Esperanza'];
@@ -440,6 +441,32 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list') => void }) =
               </div>
             </div>
           </div>
+
+          {/* Preparación de Tierra Card */}
+          <div 
+            onClick={() => onNavigate('prep')}
+            className="group relative bg-[#0D0D0D] p-8 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF8C00]/5 border border-white/5 hover:border-[#FF8C00]/30"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF8C00] to-transparent opacity-30 group-hover:opacity-50 transition-opacity" />
+            
+            <div className="flex flex-col h-full justify-between gap-12">
+              <div className="w-16 h-16 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                <Tractor className="w-8 h-8 text-[#FF8C00]" />
+              </div>
+              
+              <div className="flex items-end justify-between gap-4">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-medium text-white group-hover:text-[#FF8C00] transition-colors">Preparación de Tierra</h3>
+                  <p className="text-sm text-white/40 leading-relaxed">
+                    Planifica y registra labores de arado, rastreo y nivelación.
+                  </p>
+                </div>
+                <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF8C00] transition-colors">
+                  <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-black transition-colors" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -488,6 +515,239 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list') => void }) =
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+};
+
+interface PrepTask {
+  id: string;
+  lote: string;
+  actividad: string;
+  operador: string;
+  estado: 'En Proceso' | 'Finalizado' | 'Borrador';
+}
+
+const PrepView = ({ onGoHome }: { onGoHome: () => void }) => {
+  const [tasks] = useState<PrepTask[]>([
+    { id: 'HPR-PT-001', lote: 'Lote A-12', actividad: 'Arado Profundo', operador: 'Carlos Mendoza', estado: 'En Proceso' },
+    { id: 'HPR-PT-002', lote: 'Lote B-05', actividad: 'Rastreo', operador: 'Luis Fernando', estado: 'Finalizado' },
+    { id: 'HPR-PT-003', lote: 'Lote C-08', actividad: 'Nivelación', operador: 'José Ramírez', estado: 'Borrador' },
+    { id: 'HPR-PT-004', lote: 'Lote A-15', actividad: 'Subsolado', operador: 'Miguel Ángel', estado: 'En Proceso' },
+  ]);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterEstado, setFilterEstado] = useState<string>('Todos');
+  const [filterActividad, setFilterActividad] = useState<string>('Todas');
+  const [filterLote, setFilterLote] = useState<string>('Todos');
+
+  const uniqueActividades = Array.from(new Set(tasks.map(t => t.actividad)));
+  const uniqueLotes = Array.from(new Set(tasks.map(t => t.lote)));
+
+  const filteredTasks = tasks.filter(task => {
+    const matchesSearch = 
+      task.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.lote.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.operador.toLowerCase().includes(searchTerm.toLowerCase());
+      
+    const matchesEstado = filterEstado === 'Todos' || task.estado === filterEstado;
+    const matchesActividad = filterActividad === 'Todas' || task.actividad === filterActividad;
+    const matchesLote = filterLote === 'Todos' || task.lote === filterLote;
+
+    return matchesSearch && matchesEstado && matchesActividad && matchesLote;
+  });
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8 pb-24 px-4 pt-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={onGoHome}
+            className="p-3 bg-[#0D0D0D] text-[#FF8C00] rounded-2xl hover:bg-[#FF8C00]/10 transition-colors shadow-lg"
+            title="Volver al Inicio"
+          >
+            <Home className="w-6 h-6" />
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Preparación de Tierra</h1>
+            <div className="flex items-center gap-2 mt-2">
+              <MapPin className="w-4 h-4 text-[#FF8C00]" />
+              <span className="text-sm font-medium text-white/50 uppercase tracking-wider">Hacienda Puricaure</span>
+            </div>
+          </div>
+        </div>
+        
+        <button className="flex items-center justify-center gap-2 bg-[#FF8C00] text-black px-6 py-4 rounded-2xl font-bold hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20">
+          <Plus className="w-5 h-5" />
+          Iniciar Nueva Labor
+        </button>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-[#111111] p-6 rounded-3xl shadow-xl border border-white/5 space-y-6">
+        {/* Search Bar */}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-[#FF8C00]" />
+          </div>
+          <input
+            type="text"
+            placeholder="Buscar por ID, Lote u Operador..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="block w-full pl-12 pr-4 py-4 bg-black border border-[#FF8C00]/50 rounded-2xl text-[#FF8C00] placeholder-white/20 focus:outline-none focus:border-[#FF8C00] focus:ring-1 focus:ring-[#FF8C00] transition-all"
+          />
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-4">
+          <select
+            value={filterEstado}
+            onChange={(e) => setFilterEstado(e.target.value)}
+            className={clsx(
+              "bg-black border rounded-xl px-5 py-3 text-sm focus:outline-none transition-all appearance-none pr-12 relative",
+              filterEstado !== 'Todos' 
+                ? "border-[#FF8C00]/50 text-[#FF8C00]" 
+                : "border-white/5 text-white/70 hover:border-white/10"
+            )}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
+          >
+            <option value="Todos">Todos los Estados</option>
+            <option value="En Proceso">En Proceso</option>
+            <option value="Finalizado">Finalizado</option>
+            <option value="Borrador">Borrador</option>
+          </select>
+
+          <select
+            value={filterActividad}
+            onChange={(e) => setFilterActividad(e.target.value)}
+            className={clsx(
+              "bg-black border rounded-xl px-5 py-3 text-sm focus:outline-none transition-all appearance-none pr-12",
+              filterActividad !== 'Todas' 
+                ? "border-[#FF8C00]/50 text-[#FF8C00]" 
+                : "border-white/5 text-white/70 hover:border-white/10"
+            )}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
+          >
+            <option value="Todas">Todas las Actividades</option>
+            {uniqueActividades.map(act => (
+              <option key={act} value={act}>{act}</option>
+            ))}
+          </select>
+
+          <select
+            value={filterLote}
+            onChange={(e) => setFilterLote(e.target.value)}
+            className={clsx(
+              "bg-black border rounded-xl px-5 py-3 text-sm focus:outline-none transition-all appearance-none pr-12",
+              filterLote !== 'Todos' 
+                ? "border-[#FF8C00]/50 text-[#FF8C00]" 
+                : "border-white/5 text-white/70 hover:border-white/10"
+            )}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
+          >
+            <option value="Todos">Todos los Lotes</option>
+            {uniqueLotes.map(lote => (
+              <option key={lote} value={lote}>{lote}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Table/List */}
+      <div className="bg-[#0D0D0D] rounded-3xl shadow-xl overflow-hidden">
+        {/* Table Header (Hidden on small screens, visible on md+) */}
+        <div className="hidden md:grid grid-cols-5 gap-4 p-6 border-b border-white/5 text-xs font-bold text-white/40 uppercase tracking-widest">
+          <div>ID Labor</div>
+          <div>Lote</div>
+          <div>Actividad</div>
+          <div>Operador</div>
+          <div>Estado</div>
+        </div>
+
+        {/* List Items */}
+        <div className="flex flex-col">
+          {filteredTasks.length === 0 ? (
+            <div className="p-12 text-center flex flex-col items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                <Search className="w-8 h-8 text-white/20" />
+              </div>
+              <p className="text-white/60 text-lg">No se encontraron labores de preparación</p>
+            </div>
+          ) : (
+            filteredTasks.map((task, index) => (
+              <div 
+                key={task.id}
+                onClick={() => console.log(`Entrando al detalle de ${task.id}`)}
+                className={clsx(
+                  "grid grid-cols-1 md:grid-cols-5 gap-4 p-6 cursor-pointer transition-colors duration-200 hover:bg-[#161616] active:bg-[#161616]",
+                  index !== filteredTasks.length - 1 && "border-b border-white/5 shadow-[0_1px_0_0_rgba(255,255,255,0.02)]"
+                )}
+              >
+                {/* ID */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+                    <Tractor className="w-5 h-5 text-white/50" />
+                  </div>
+                  <div>
+                    <span className="md:hidden text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">ID Labor</span>
+                    <span className="font-mono text-white font-medium">{task.id}</span>
+                  </div>
+                </div>
+
+                {/* Lote */}
+                <div className="flex items-center">
+                  <div>
+                    <span className="md:hidden text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Lote</span>
+                    <span className="text-white/80">{task.lote}</span>
+                  </div>
+                </div>
+
+                {/* Actividad */}
+                <div className="flex items-center">
+                  <div>
+                    <span className="md:hidden text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Actividad</span>
+                    <span className="text-white/80">{task.actividad}</span>
+                  </div>
+                </div>
+
+                {/* Operador */}
+                <div className="flex items-center">
+                  <div>
+                    <span className="md:hidden text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Operador</span>
+                    <span className="text-white/80">{task.operador}</span>
+                  </div>
+                </div>
+
+                {/* Estado */}
+                <div className="flex items-center justify-between md:justify-start">
+                  <div>
+                    <span className="md:hidden text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Estado</span>
+                    <div className="flex items-center gap-2">
+                      {task.estado === 'En Proceso' && (
+                        <div className="relative flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF8C00] opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-[#FF8C00] shadow-[0_0_8px_#FF8C00]"></span>
+                        </div>
+                      )}
+                      <span className={clsx(
+                        "font-medium",
+                        task.estado === 'En Proceso' ? "text-[#FF8C00]" : 
+                        task.estado === 'Finalizado' ? "text-emerald-500" : "text-white/50"
+                      )}>
+                        {task.estado}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Mobile chevron */}
+                  <ChevronRight className="w-5 h-5 text-white/20 md:hidden" />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -1764,7 +2024,7 @@ const OperationView = ({
 };
 
 export default function App() {
-  const [view, setView] = useState<'dashboard' | 'list' | 'form' | 'operation'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'list' | 'form' | 'operation' | 'prep'>('dashboard');
   const [isOnline, setIsOnline] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([
     {
@@ -1987,6 +2247,9 @@ export default function App() {
                 setIsSigning={setIsSigning} 
                 onFinalize={handleFinalize}
               />
+            )}
+            {view === 'prep' && (
+              <PrepView onGoHome={() => setView('dashboard')} />
             )}
           </motion.div>
         </AnimatePresence>
