@@ -429,22 +429,22 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep') => 
           {/* Recepción de Semillas Card */}
           <div 
             onClick={() => onNavigate('list')}
-            className="group relative bg-[#0D0D0D] p-8 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF8C00]/5"
+            className="group relative bg-[#0D0D0D] p-6 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF8C00]/5"
           >
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF8C00] to-transparent opacity-50" />
             
-            <div className="flex flex-col h-full justify-between gap-12">
-              <div className="w-16 h-16 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-                <Truck className="w-8 h-8 text-[#FF8C00]" />
+            <div className="flex flex-col h-full gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shrink-0">
+                  <Truck className="w-6 h-6 text-[#FF8C00]" />
+                </div>
+                <h3 className="text-xl font-medium text-white group-hover:text-[#FF8C00] transition-colors leading-tight">Recepción de Semillas</h3>
               </div>
               
-              <div className="flex items-end justify-between gap-4">
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-medium text-white group-hover:text-[#FF8C00] transition-colors">Recepción de Semillas</h3>
-                  <p className="text-sm text-white/40 leading-relaxed">
-                    Gestiona el ingreso de camiones, registro de pesos y control de calidad.
-                  </p>
-                </div>
+              <div className="flex items-end justify-between gap-4 mt-auto">
+                <p className="text-sm text-white/40 leading-relaxed">
+                  Gestiona el ingreso de camiones, registro de pesos y control de calidad.
+                </p>
                 <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF8C00] transition-colors">
                   <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-black transition-colors" />
                 </div>
@@ -455,22 +455,22 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep') => 
           {/* Preparación de Tierra Card */}
           <div 
             onClick={() => onNavigate('prep')}
-            className="group relative bg-[#0D0D0D] p-8 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF8C00]/5 border border-white/5 hover:border-[#FF8C00]/30"
+            className="group relative bg-[#0D0D0D] p-6 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF8C00]/5 border border-white/5 hover:border-[#FF8C00]/30"
           >
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF8C00] to-transparent opacity-30 group-hover:opacity-50 transition-opacity" />
             
-            <div className="flex flex-col h-full justify-between gap-12">
-              <div className="w-16 h-16 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-                <Tractor className="w-8 h-8 text-[#FF8C00]" />
+            <div className="flex flex-col h-full gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shrink-0">
+                  <Tractor className="w-6 h-6 text-[#FF8C00]" />
+                </div>
+                <h3 className="text-xl font-medium text-white group-hover:text-[#FF8C00] transition-colors leading-tight">Preparación de Tierra</h3>
               </div>
               
-              <div className="flex items-end justify-between gap-4">
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-medium text-white group-hover:text-[#FF8C00] transition-colors">Preparación de Tierra</h3>
-                  <p className="text-sm text-white/40 leading-relaxed">
-                    Planifica y registra labores de arado, rastreo y nivelación.
-                  </p>
-                </div>
+              <div className="flex items-end justify-between gap-4 mt-auto">
+                <p className="text-sm text-white/40 leading-relaxed">
+                  Planifica y registra labores de arado, rastreo y nivelación.
+                </p>
                 <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF8C00] transition-colors">
                   <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-black transition-colors" />
                 </div>
