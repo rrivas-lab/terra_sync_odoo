@@ -4448,11 +4448,6 @@ const MuestreoFormView = ({
                 <div className="flex items-center gap-3 p-4 bg-black border border-white/5 rounded-2xl group hover:border-[#FF9500]/30 transition-all">
                   <FileText className="w-5 h-5 text-[#FF9500]" />
                   <span className="text-white font-medium">{formData.compraAsociada || 'N/A'}</span>
-                  {formData.compraAsociada && (
-                    <button className="ml-auto text-[10px] font-bold text-[#FF9500] hover:underline uppercase tracking-widest">
-                      Ver PO
-                    </button>
-                  )}
                 </div>
               </div>
 
