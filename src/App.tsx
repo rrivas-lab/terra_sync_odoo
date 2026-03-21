@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Search,
+  Eye,
   AlertCircle,
   CheckCircle2,
   X,
@@ -38,7 +39,8 @@ import {
   Wrench,
   Fuel,
   Ruler,
-  Save
+  Save,
+  Sprout
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -113,6 +115,19 @@ interface FuelRecord {
   rendimiento: number;
   estado: 'Finalizado' | 'Borrador';
   nivel_actual: 1 | 2 | 3;
+}
+
+interface Muestreo {
+  id: string;
+  lote: string;
+  actividad: 'Muestreo de Cantidad y Peso' | 'Muestreo Inicial' | 'Control de Humedad' | 'Control de Calidad' | 'Muestreo de Salida';
+  operador: string;
+  proveedor: string;
+  estado: 'Por Iniciar' | 'Borrador' | 'En Proceso' | 'Finalizado';
+  fecha: string;
+  observaciones?: string;
+  compraAsociada?: string;
+  origen: 'Automático (por Recepción)' | 'Manual';
 }
 
 // --- Mock Data ---
@@ -247,6 +262,43 @@ const MOCK_FUEL_RECORDS: FuelRecord[] = [
   }
 ];
 
+const MOCK_MUESTREOS: Muestreo[] = [
+  {
+    id: 'HPR-MC-001',
+    lote: 'LOTE-SEM-2024-01',
+    actividad: 'Muestreo de Cantidad y Peso',
+    operador: 'Juan Pérez',
+    proveedor: 'AgroPiña S.A.',
+    estado: 'Finalizado',
+    fecha: '2024-03-20',
+    observaciones: 'Semilla en óptimas condiciones.',
+    compraAsociada: 'PO-2024-001',
+    origen: 'Manual'
+  },
+  {
+    id: 'HPR-MC-002',
+    lote: 'LOTE-SEM-2024-05',
+    actividad: 'Muestreo de Cantidad y Peso',
+    operador: 'Carlos Rodríguez',
+    proveedor: 'Frutas del Valle',
+    estado: 'En Proceso',
+    fecha: '2024-03-21',
+    compraAsociada: 'PO-2024-002',
+    origen: 'Automático (por Recepción)'
+  },
+  {
+    id: 'HPR-MC-003',
+    lote: 'LOTE-SEM-2024-12',
+    actividad: 'Muestreo de Cantidad y Peso',
+    operador: 'Mario Castañeda',
+    proveedor: 'Semillas del Norte',
+    estado: 'Borrador',
+    fecha: '2024-03-21',
+    compraAsociada: 'PO-2024-003',
+    origen: 'Manual'
+  }
+];
+
 // --- Components ---
 
 const TransbordoWizard = ({ 
@@ -274,7 +326,7 @@ const TransbordoWizard = ({
         >
           <div className="w-full max-w-xl bg-[#0D0D0D] rounded-[40px] p-8 md:p-12 shadow-[0_40px_100px_rgba(0,0,0,0.8)] border border-white/5 flex flex-col gap-10">
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-black text-[#FF8C00] uppercase tracking-[0.4em] opacity-70">Paso 1 de 2</span>
+              <span className="text-[10px] font-black text-[#FF9500] uppercase tracking-[0.4em] opacity-70">Paso 1 de 2</span>
               <h2 className="text-2xl font-black text-white tracking-tighter">Selección de Choferes</h2>
             </div>
 
@@ -306,7 +358,7 @@ const TransbordoWizard = ({
               <button 
                 onClick={() => setStep(2)}
                 disabled={!oldDriver || !newDriver}
-                className="py-6 bg-[#FF8C00] text-black rounded-2xl font-black text-xs md:text-sm hover:bg-[#FF8C00]/90 transition-all uppercase tracking-[0.3em] shadow-[0_10px_30px_rgba(255,140,0,0.3)] disabled:opacity-20 disabled:cursor-not-allowed"
+                className="py-6 bg-[#FF9500] text-black rounded-2xl font-black text-xs md:text-sm hover:bg-[#FF9500]/90 transition-all uppercase tracking-[0.3em] shadow-[0_10px_30px_rgba(255,149,0,0.3)] disabled:opacity-20 disabled:cursor-not-allowed"
               >
                 Siguiente
               </button>
@@ -342,7 +394,7 @@ const SignaturePad = ({ onSave, onCancel }: { onSave: (data: string) => void; on
     if (!ctx) return;
     
     // Configuración inicial del canvas
-    ctx.strokeStyle = '#FF8C00';
+    ctx.strokeStyle = '#FF9500';
     ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -417,7 +469,7 @@ const SignaturePad = ({ onSave, onCancel }: { onSave: (data: string) => void; on
       >
         <div className="flex justify-between items-center">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-[#FF8C00] uppercase tracking-[0.4em] opacity-70">Validación Final</span>
+            <span className="text-[10px] font-black text-[#FF9500] uppercase tracking-[0.4em] opacity-70">Validación Final</span>
             <h2 className="text-2xl font-black text-white tracking-tighter">Firma de Conformidad</h2>
           </div>
           <button 
@@ -453,7 +505,7 @@ const SignaturePad = ({ onSave, onCancel }: { onSave: (data: string) => void; on
           </button>
           <button 
             onClick={save}
-            className="py-6 bg-[#FF8C00] text-black rounded-2xl font-black text-xs md:text-sm hover:bg-[#FF8C00]/90 transition-all uppercase tracking-[0.3em] shadow-[0_10px_30px_rgba(255,140,0,0.3)]"
+            className="py-6 bg-[#FF9500] text-black rounded-2xl font-black text-xs md:text-sm hover:bg-[#FF9500]/90 transition-all uppercase tracking-[0.3em] shadow-[0_10px_30px_rgba(255,149,0,0.3)]"
           >
             Confirmar Firma
           </button>
@@ -463,12 +515,12 @@ const SignaturePad = ({ onSave, onCancel }: { onSave: (data: string) => void; on
   );
 };
 
-const ElevatedInput = ({ label, icon: Icon, value, onChange, disabled, type = "text", placeholder }: any) => (
-  <div className="space-y-2">
-    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF8C00]/60 ml-1">{label}</label>
+const ElevatedInput = ({ label, icon: Icon, value, onChange, disabled, type = "text", placeholder, suffix }: any) => (
+  <div className="space-y-1.5">
+    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF9500]/60 ml-1">{label}</label>
     <div className="relative group">
       <div className="absolute left-4 top-1/2 -translate-y-1/2">
-        <Icon className="w-4 h-4 text-[#FF8C00]/30 group-focus-within:text-[#FF8C00] transition-colors" />
+        <Icon className="w-4 h-4 text-[#FF9500]/30 group-focus-within:text-[#FF9500] transition-colors" />
       </div>
       <input 
         type={type}
@@ -477,11 +529,16 @@ const ElevatedInput = ({ label, icon: Icon, value, onChange, disabled, type = "t
         disabled={disabled}
         placeholder={placeholder}
         className={cn(
-          "w-full bg-[#0D0D0D] border border-white/5 rounded-lg py-3 pl-11 pr-4 text-sm font-medium text-[#FF8C00] placeholder:text-white/40 outline-none transition-all",
-          !disabled && "focus:border-[#FF8C00]/30 focus:bg-[#121212]",
+          "w-full bg-[#0D0D0D] border border-white/5 rounded-lg py-2.5 pl-11 pr-4 text-sm font-medium text-[#FF9500] placeholder:text-white/20 outline-none transition-all",
+          !disabled && "focus:border-[#FF9500]/30 focus:bg-[#121212]",
           disabled && "opacity-60 cursor-default"
         )}
       />
+      {suffix && (
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+          <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{suffix}</span>
+        </div>
+      )}
     </div>
   </div>
 );
@@ -491,14 +548,14 @@ const ProminentInput = ({ label, icon: Icon, value, onChange, placeholder, unit 
     <label className="text-xs font-bold uppercase tracking-[0.3em] text-white/30 ml-2">{label}</label>
     <div className="relative group">
       <div className="absolute left-6 top-1/2 -translate-y-1/2">
-        <Icon className="w-6 h-6 text-[#FF8C00]/40 group-focus-within:text-[#FF8C00] transition-colors" />
+        <Icon className="w-6 h-6 text-[#FF9500]/40 group-focus-within:text-[#FF9500] transition-colors" />
       </div>
       <input 
         type="number"
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full bg-black/40 border border-white/5 rounded-[2rem] py-8 pl-16 pr-12 text-4xl font-black text-[#FF8C00] outline-none focus:border-[#FF8C00]/30 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-full bg-black/40 border border-white/5 rounded-[2rem] py-8 pl-16 pr-12 text-4xl font-black text-[#FF9500] outline-none focus:border-[#FF9500]/30 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       {unit && (
         <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xl font-black text-white/10 uppercase">{unit}</span>
@@ -509,26 +566,26 @@ const ProminentInput = ({ label, icon: Icon, value, onChange, placeholder, unit 
 
 const ElevatedSelect = ({ label, icon: Icon, value, onChange, options, disabled }: any) => (
   <div className="space-y-2">
-    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF8C00]/60 ml-1">{label}</label>
+    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 ml-1">{label}</label>
     <div className="relative group">
       <div className="absolute left-4 top-1/2 -translate-y-1/2">
-        <Icon className="w-4 h-4 text-[#FF8C00]/30 group-focus-within:text-[#FF8C00] transition-colors" />
+        <Icon className="w-4 h-4 text-[#FF9500]/40 group-focus-within:text-[#FF9500] transition-colors" />
       </div>
       <select 
         value={value}
         onChange={onChange}
         disabled={disabled}
         className={cn(
-          "w-full bg-[#0D0D0D] border border-white/5 rounded-lg py-3 pl-11 pr-10 text-sm font-medium text-[#FF8C00] appearance-none outline-none transition-all",
-          !disabled && "focus:border-[#FF8C00]/30 focus:bg-[#121212]",
-          disabled && "opacity-60 cursor-default"
+          "w-full bg-black border border-white/10 rounded-xl py-3.5 pl-11 pr-10 text-sm font-medium text-white appearance-none outline-none transition-all",
+          !disabled && "focus:border-[#FF9500] focus:ring-1 focus:ring-[#FF9500] hover:border-white/20",
+          disabled && "opacity-50 cursor-default"
         )}
       >
-        <option value="">Seleccionar...</option>
-        {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+        <option value="" className="bg-[#0D0D0D]">Seleccionar...</option>
+        {options.map((opt: string) => <option key={opt} value={opt} className="bg-[#0D0D0D]">{opt}</option>)}
       </select>
       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-        <ChevronRight className="w-4 h-4 text-[#FF8C00]/50 rotate-90" />
+        <ChevronRight className="w-4 h-4 text-white/20 rotate-90" />
       </div>
     </div>
   </div>
@@ -538,7 +595,7 @@ const ElevatedSelect = ({ label, icon: Icon, value, onChange, options, disabled 
 
 // --- Views ---
 
-const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep' | 'fuel') => void }) => {
+const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep' | 'fuel' | 'muestreo') => void }) => {
   const [showFincaModal, setShowFincaModal] = useState(false);
   const [activeFinca, setActiveFinca] = useState('Hacienda Puricaure');
   const fincas = ['Hacienda Puricaure', 'Finca El Paraíso', 'Hacienda La Esperanza'];
@@ -548,15 +605,15 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep' | 'f
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div className="space-y-6">
-          <h1 className="text-5xl font-bold tracking-tight text-[#FF8C00]">Hola, Roberto!</h1>
+          <h1 className="text-5xl font-bold tracking-tight text-[#FF9500]">Hola, Roberto!</h1>
           
           {/* Farm Selector */}
           <div 
             onClick={() => setShowFincaModal(true)}
             className="inline-flex items-center gap-3 bg-[#0D0D0D] px-6 py-4 rounded-2xl shadow-lg cursor-pointer hover:bg-[#1A1A1A] transition-colors"
           >
-            <div className="w-10 h-10 rounded-full bg-[#FF8C00]/10 flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-[#FF8C00]" />
+            <div className="w-10 h-10 rounded-full bg-[#FF9500]/10 flex items-center justify-center">
+              <MapPin className="w-5 h-5 text-[#FF9500]" />
             </div>
             <div>
               <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Finca Activa</p>
@@ -568,7 +625,7 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep' | 'f
 
         {/* Weather Widget */}
         <div className="flex items-center gap-4 bg-[#0D0D0D] px-6 py-4 rounded-2xl shadow-lg">
-          <Sun className="w-8 h-8 text-[#FF8C00]" />
+          <Sun className="w-8 h-8 text-[#FF9500]" />
           <div>
             <p className="text-2xl font-light text-white">28°C</p>
             <p className="text-xs font-medium text-white/50 uppercase tracking-wider">Soleado</p>
@@ -584,23 +641,23 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep' | 'f
           {/* Recepción de Semillas Card */}
           <div 
             onClick={() => onNavigate('list')}
-            className="group relative bg-[#0D0D0D] p-6 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF8C00]/5"
+            className="group relative bg-[#0D0D0D] p-6 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF9500]/5"
           >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF8C00] to-transparent opacity-50" />
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF9500] to-transparent opacity-50" />
             
             <div className="flex flex-col h-full gap-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shrink-0">
-                  <Truck className="w-6 h-6 text-[#FF8C00]" />
+                <div className="w-12 h-12 rounded-2xl bg-[#FF9500]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shrink-0">
+                  <Truck className="w-6 h-6 text-[#FF9500]" />
                 </div>
-                <h3 className="text-xl font-medium text-white group-hover:text-[#FF8C00] transition-colors leading-tight">Recepción de Semillas</h3>
+                <h3 className="text-xl font-medium text-white group-hover:text-[#FF9500] transition-colors leading-tight">Recepción de Semillas</h3>
               </div>
               
               <div className="flex items-end justify-between gap-4 mt-auto">
                 <p className="text-sm text-white/40 leading-relaxed">
                   Gestiona el ingreso de camiones, registro de pesos y control de calidad.
                 </p>
-                <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF8C00] transition-colors">
+                <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF9500] transition-colors">
                   <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-black transition-colors" />
                 </div>
               </div>
@@ -610,23 +667,23 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep' | 'f
           {/* Preparación de Tierra Card */}
           <div 
             onClick={() => onNavigate('prep')}
-            className="group relative bg-[#0D0D0D] p-6 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF8C00]/5 border border-white/5 hover:border-[#FF8C00]/30"
+            className="group relative bg-[#0D0D0D] p-6 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF9500]/5 border border-white/5 hover:border-[#FF9500]/30"
           >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF8C00] to-transparent opacity-30 group-hover:opacity-50 transition-opacity" />
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF9500] to-transparent opacity-30 group-hover:opacity-50 transition-opacity" />
             
             <div className="flex flex-col h-full gap-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shrink-0">
-                  <Tractor className="w-6 h-6 text-[#FF8C00]" />
+                <div className="w-12 h-12 rounded-2xl bg-[#FF9500]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shrink-0">
+                  <Tractor className="w-6 h-6 text-[#FF9500]" />
                 </div>
-                <h3 className="text-xl font-medium text-white group-hover:text-[#FF8C00] transition-colors leading-tight">Preparación de Tierra</h3>
+                <h3 className="text-xl font-medium text-white group-hover:text-[#FF9500] transition-colors leading-tight">Preparación de Tierra</h3>
               </div>
               
               <div className="flex items-end justify-between gap-4 mt-auto">
                 <p className="text-sm text-white/40 leading-relaxed">
                   Planifica y registra labores de arado, rastreo y nivelación.
                 </p>
-                <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF8C00] transition-colors">
+                <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF9500] transition-colors">
                   <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-black transition-colors" />
                 </div>
               </div>
@@ -636,23 +693,49 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep' | 'f
           {/* Consumo Combustible Card */}
           <div 
             onClick={() => onNavigate('fuel')}
-            className="group relative bg-[#0D0D0D] p-6 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF8C00]/5 border border-white/5 hover:border-[#FF8C00]/30"
+            className="group relative bg-[#0D0D0D] p-6 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF9500]/5 border border-white/5 hover:border-[#FF9500]/30"
           >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF8C00] to-transparent opacity-30 group-hover:opacity-50 transition-opacity" />
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF9500] to-transparent opacity-30 group-hover:opacity-50 transition-opacity" />
             
             <div className="flex flex-col h-full gap-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shrink-0">
-                  <Fuel className="w-6 h-6 text-[#FF8C00]" />
+                <div className="w-12 h-12 rounded-2xl bg-[#FF9500]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shrink-0">
+                  <Fuel className="w-6 h-6 text-[#FF9500]" />
                 </div>
-                <h3 className="text-xl font-medium text-white group-hover:text-[#FF8C00] transition-colors leading-tight">Consumo Combustible</h3>
+                <h3 className="text-xl font-medium text-white group-hover:text-[#FF9500] transition-colors leading-tight">Consumo Combustible</h3>
               </div>
               
               <div className="flex items-end justify-between gap-4 mt-auto">
                 <p className="text-sm text-white/40 leading-relaxed">
                   Control y monitoreo de abastecimiento de combustible para maquinaria.
                 </p>
-                <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF8C00] transition-colors">
+                <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF9500] transition-colors">
+                  <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-black transition-colors" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Muestreo de Costales Card */}
+          <div 
+            onClick={() => onNavigate('muestreo')}
+            className="group relative bg-[#0D0D0D] p-6 rounded-3xl shadow-xl cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF9500]/5 border border-white/5 hover:border-[#FF9500]/30"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF9500] to-transparent opacity-30 group-hover:opacity-50 transition-opacity" />
+            
+            <div className="flex flex-col h-full gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#FF9500]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shrink-0">
+                  <ClipboardList className="w-6 h-6 text-[#FF9500]" />
+                </div>
+                <h3 className="text-xl font-medium text-white group-hover:text-[#FF9500] transition-colors leading-tight">Muestreo de Costales</h3>
+              </div>
+              
+              <div className="flex items-end justify-between gap-4 mt-auto">
+                <p className="text-sm text-white/40 leading-relaxed">
+                  Evaluación de calidad y humedad de lotes de semillas.
+                </p>
+                <div className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF9500] transition-colors">
                   <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-black transition-colors" />
                 </div>
               </div>
@@ -694,7 +777,7 @@ const DashboardView = ({ onNavigate }: { onNavigate: (view: 'list' | 'prep' | 'f
                     }}
                     className={cn(
                       "w-full flex items-center justify-between p-4 rounded-2xl transition-colors",
-                      activeFinca === finca ? "bg-[#FF8C00]/10 text-[#FF8C00]" : "text-white hover:bg-white/5"
+                      activeFinca === finca ? "bg-[#FF9500]/10 text-[#FF9500]" : "text-white hover:bg-white/5"
                     )}
                   >
                     <span className="font-medium">{finca}</span>
@@ -1093,13 +1176,13 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
         <div className="flex items-center gap-6">
           <button 
             onClick={onGoBack}
-            className="p-3 bg-[#0D0D0D] text-[#FF8C00] rounded-2xl hover:bg-[#FF8C00]/10 transition-colors shadow-lg"
+            className="p-3 bg-[#0D0D0D] text-[#FF9500] rounded-2xl hover:bg-[#FF9500]/10 transition-colors shadow-lg"
             title="Volver"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-[#FF8C00] font-mono">HPR-FO-PRO-001</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-[#FF9500] font-mono">HPR-FO-PRO-001</h1>
             <div className="flex items-center gap-2 mt-2">
               <span className="text-sm font-medium text-white/50 uppercase tracking-wider">Preparación de Tierra</span>
             </div>
@@ -1107,7 +1190,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
         </div>
         
         <div className="flex items-center gap-3 bg-[#0D0D0D] px-5 py-3 rounded-2xl border border-white/5">
-          <Calendar className="w-5 h-5 text-[#FF8C00]" />
+          <Calendar className="w-5 h-5 text-[#FF9500]" />
           <input 
             type="date" 
             defaultValue={today}
@@ -1122,7 +1205,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
         <div className="bg-[#0D0D0D] p-6 md:p-8 rounded-3xl shadow-xl border border-white/5 space-y-8 transition-all duration-500">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-3">
-              <MapPin className="w-6 h-6 text-[#FF8C00]" />
+              <MapPin className="w-6 h-6 text-[#FF9500]" />
               Ubicación de la Labor
             </h2>
           </div>
@@ -1134,8 +1217,8 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
               <select 
                 value={loteId}
                 onChange={handleLoteChange}
-                className="w-full bg-[#111111] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#FF8C00]/50 focus:ring-1 focus:ring-[#FF8C00]/50 transition-all appearance-none text-lg"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 20px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px' }}
+                className="w-full bg-[#111111] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#FF9500]/50 focus:ring-1 focus:ring-[#FF9500]/50 transition-all appearance-none text-lg"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF9500'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 20px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px' }}
               >
                 <option value="">Seleccione un Lote</option>
                 {HACIENDA_DATA.map(l => (
@@ -1143,7 +1226,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                 ))}
               </select>
               {selectedLote && (
-                <div className="mt-3 flex items-center gap-2 text-[#FF8C00]/40">
+                <div className="mt-3 flex items-center gap-2 text-[#FF9500]/40">
                   <span className="text-sm font-medium">Tamaño Lote: {selectedLote.tamano}</span>
                 </div>
               )}
@@ -1156,8 +1239,8 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                 value={bloqueId}
                 onChange={handleBloqueChange}
                 disabled={!loteId}
-                className="w-full bg-[#111111] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#FF8C00]/50 focus:ring-1 focus:ring-[#FF8C00]/50 transition-all appearance-none text-lg disabled:opacity-50"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 20px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px' }}
+                className="w-full bg-[#111111] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#FF9500]/50 focus:ring-1 focus:ring-[#FF9500]/50 transition-all appearance-none text-lg disabled:opacity-50"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF9500'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 20px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px' }}
               >
                 <option value="">Seleccione un Bloque</option>
                 <option value="ALL">Todos los Bloques</option>
@@ -1166,11 +1249,11 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                 ))}
               </select>
               {bloqueId === 'ALL' ? (
-                <div className="mt-3 flex items-center gap-2 text-[#FF8C00]/40">
+                <div className="mt-3 flex items-center gap-2 text-[#FF9500]/40">
                   <span className="text-sm font-medium">Tamaño Total: {selectedLote?.tamano}</span>
                 </div>
               ) : selectedBloque && (
-                <div className="mt-3 flex items-center gap-2 text-[#FF8C00]/40">
+                <div className="mt-3 flex items-center gap-2 text-[#FF9500]/40">
                   <span className="text-sm font-medium">Tamaño Bloque: {selectedBloque.tamano}</span>
                 </div>
               )}
@@ -1183,8 +1266,8 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                 value={seccionId}
                 onChange={(e) => setSeccionId(e.target.value)}
                 disabled={!bloqueId || bloqueId === 'ALL'}
-                className="w-full bg-[#111111] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#FF8C00]/50 focus:ring-1 focus:ring-[#FF8C00]/50 transition-all appearance-none text-lg disabled:opacity-50"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 20px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px' }}
+                className="w-full bg-[#111111] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#FF9500]/50 focus:ring-1 focus:ring-[#FF9500]/50 transition-all appearance-none text-lg disabled:opacity-50"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF9500'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 20px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px' }}
               >
                 <option value="">Seleccione una Sección</option>
                 <option value="ALL">Todas las Secciones</option>
@@ -1193,13 +1276,13 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                 ))}
               </select>
               {seccionId === 'ALL' ? (
-                <div className="mt-3 flex items-center gap-2 text-[#FF8C00]/40">
+                <div className="mt-3 flex items-center gap-2 text-[#FF9500]/40">
                   <span className="text-sm font-medium">
                     Área Total: {bloqueId === 'ALL' ? selectedLote?.tamano : selectedBloque?.tamano}
                   </span>
                 </div>
               ) : selectedSeccion && (
-                <div className="mt-3 flex items-center gap-2 text-[#FF8C00]/40">
+                <div className="mt-3 flex items-center gap-2 text-[#FF9500]/40">
                   <span className="text-sm font-medium">Área de la Sección: {selectedSeccion.area}</span>
                 </div>
               )}
@@ -1228,7 +1311,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                   onConfirm(newTask);
                 }}
                 disabled={!loteId || !bloqueId || !seccionId}
-                className="bg-[#FF8C00] text-black px-8 py-5 rounded-2xl font-bold text-lg hover:bg-[#FF8C00]/90 transition-all shadow-lg shadow-[#FF8C00]/20 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto flex items-center justify-center gap-3"
+                className="bg-[#FF9500] text-black px-8 py-5 rounded-2xl font-bold text-lg hover:bg-[#FF9500]/90 transition-all shadow-lg shadow-[#FF9500]/20 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto flex items-center justify-center gap-3"
               >
                 Confirmar Ubicación e Iniciar Labores
                 <ChevronRight className="w-6 h-6" />
@@ -1249,9 +1332,9 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
           <div className="bg-[#0D0D0D] p-5 rounded-2xl border border-white/5 shadow-lg">
             <div className="flex justify-between items-center mb-4">
               <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                <span className="text-white/70"><span className="text-[#FF8C00] font-medium mr-1">Lote:</span>{selectedLote?.nombre}</span>
-                <span className="text-white/70"><span className="text-[#FF8C00] font-medium mr-1">Bloque:</span>{selectedBloque?.nombre || 'Todos'}</span>
-                <span className="text-white/70"><span className="text-[#FF8C00] font-medium mr-1">Sección:</span>{selectedSeccion?.nombre || 'Todas'}</span>
+                <span className="text-white/70"><span className="text-[#FF9500] font-medium mr-1">Lote:</span>{selectedLote?.nombre}</span>
+                <span className="text-white/70"><span className="text-[#FF9500] font-medium mr-1">Bloque:</span>{selectedBloque?.nombre || 'Todos'}</span>
+                <span className="text-white/70"><span className="text-[#FF9500] font-medium mr-1">Sección:</span>{selectedSeccion?.nombre || 'Todas'}</span>
               </div>
               <button 
                 onClick={() => setIsConfirmed(false)} 
@@ -1265,14 +1348,14 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-medium">
                 <span className="text-white/50">Avance del Lote</span>
-                <span className="text-[#FF8C00]">{progress}% Completado</span>
+                <span className="text-[#FF9500]">{progress}% Completado</span>
               </div>
               <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
-                  className="bg-[#FF8C00] h-full rounded-full" 
+                  className="bg-[#FF9500] h-full rounded-full" 
                 />
               </div>
             </div>
@@ -1298,22 +1381,22 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                     "p-5 rounded-2xl transition-all duration-300 flex flex-col gap-4 relative overflow-hidden",
                     isBlocked && "bg-[#0D0D0D]/40 border border-white/5 opacity-60",
                     (isAvailable || isInProgress) && "cursor-pointer",
-                    isAvailable && "bg-[#0D0D0D] border border-[#FF8C00]/30 hover:shadow-[0_8px_30px_rgba(255,140,0,0.15)] hover:-translate-y-1",
-                    isInProgress && "bg-[#0D0D0D] border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.2)]",
+                    isAvailable && "bg-[#0D0D0D] border border-[#FF9500]/30 hover:shadow-[0_8px_30px_rgba(255,149,0,0.15)] hover:-translate-y-1",
+                    isInProgress && "bg-[#0D0D0D] border border-[#FF9500] shadow-[0_0_15px_rgba(255,149,0,0.2)]",
                     isFinished && "bg-black border border-white/10"
                   )}
                 >
                   {/* Glow effect for in progress */}
                   {isInProgress && (
-                    <div className="absolute inset-0 bg-[#FF8C00]/5 animate-pulse" />
+                    <div className="absolute inset-0 bg-[#FF9500]/5 animate-pulse" />
                   )}
 
                   <div className="flex justify-between items-center relative z-10">
                     <div className="flex items-center gap-3">
                       {isBlocked && <Lock className="w-5 h-5 text-white/40" />}
-                      {isFinished && <CheckCircle2 className="w-5 h-5 text-[#FF8C00]" />}
-                      {isInProgress && <Clock className="w-5 h-5 text-[#FF8C00] animate-pulse" />}
-                      {isAvailable && <Circle className="w-5 h-5 text-[#FF8C00]" />}
+                      {isFinished && <CheckCircle2 className="w-5 h-5 text-[#FF9500]" />}
+                      {isInProgress && <Clock className="w-5 h-5 text-[#FF9500] animate-pulse" />}
+                      {isAvailable && <Circle className="w-5 h-5 text-[#FF9500]" />}
                       <h3 className={clsx(
                         "text-lg font-bold",
                         isBlocked ? "text-white/50" : "text-white",
@@ -1324,7 +1407,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                     {(isInProgress || isFinished) && (
                       <div className={clsx(
                         "font-mono text-sm px-3 py-1.5 rounded-lg border",
-                        isInProgress ? "text-[#FF8C00] bg-[#FF8C00]/10 border-[#FF8C00]/20" : "text-white/50 bg-white/5 border-white/10"
+                        isInProgress ? "text-[#FF9500] bg-[#FF9500]/10 border-[#FF9500]/20" : "text-white/50 bg-white/5 border-white/10"
                       )}>
                         {formatDuration(act.startTime, act.endTime, act.isTimerRunning)}
                       </div>
@@ -1363,7 +1446,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setExpandedActivityId(act.id); }}
-                          className="col-span-1 py-3.5 bg-[#FF8C00]/10 text-[#FF8C00] font-bold rounded-xl hover:bg-[#FF8C00] hover:text-black transition-colors border border-[#FF8C00]/20 hover:border-transparent"
+                          className="col-span-1 py-3.5 bg-[#FF9500]/10 text-[#FF9500] font-bold rounded-xl hover:bg-[#FF9500] hover:text-black transition-colors border border-[#FF9500]/20 hover:border-transparent"
                         >
                           Ver Detalles
                         </button>
@@ -1394,7 +1477,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setExpandedActivityId(act.id); }}
-                          className="col-span-1 py-3.5 bg-[#FF8C00] text-black font-bold rounded-xl hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20"
+                          className="col-span-1 py-3.5 bg-[#FF9500] text-black font-bold rounded-xl hover:bg-[#FF9500]/90 transition-colors shadow-lg shadow-[#FF9500]/20"
                         >
                           Registrar
                         </button>
@@ -1448,7 +1531,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                             {/* Duración de Labor */}
                             <div className="bg-[#121212] p-5 rounded-2xl border border-white/5 space-y-4">
                               <h4 className="text-white/70 font-medium flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-[#FF8C00]" />
+                                <Clock className="w-4 h-4 text-[#FF9500]" />
                                 Duración de Labor
                               </h4>
                               <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
@@ -1459,7 +1542,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                     "w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg shrink-0",
                                     act.isTimerRunning 
                                       ? "bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30" 
-                                      : "bg-[#FF8C00]/20 text-[#FF8C00] border border-[#FF8C00]/30 hover:bg-[#FF8C00]/30",
+                                      : "bg-[#FF9500]/20 text-[#FF9500] border border-[#FF9500]/30 hover:bg-[#FF9500]/30",
                                     act.state === 'finalizado' && "opacity-50 cursor-not-allowed"
                                   )}
                                 >
@@ -1474,14 +1557,14 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                         type="date" 
                                         value={act.startTime ? act.startTime.toISOString().split('T')[0] : ''}
                                         onChange={(e) => handleManualDateChange(act.id, 'startTime', e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF9500]/50" 
                                       />
                                       <input 
                                         type="time" 
                                         step="1"
                                         value={act.startTime ? act.startTime.toTimeString().slice(0, 8) : ''}
                                         onChange={(e) => handleManualTimeChange(act.id, 'startTime', e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF9500]/50" 
                                       />
                                     </div>
                                   </div>
@@ -1493,14 +1576,14 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                         type="date" 
                                         value={act.endTime ? act.endTime.toISOString().split('T')[0] : ''}
                                         onChange={(e) => handleManualDateChange(act.id, 'endTime', e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF9500]/50" 
                                       />
                                       <input 
                                         type="time" 
                                         step="1"
                                         value={act.endTime ? act.endTime.toTimeString().slice(0, 8) : ''}
                                         onChange={(e) => handleManualTimeChange(act.id, 'endTime', e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF9500]/50" 
                                       />
                                     </div>
                                   </div>
@@ -1513,7 +1596,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                   <div className="text-[10px] text-white/40 font-mono mt-1">
                                     {getDurationInHours(act.startTime, act.endTime, act.isTimerRunning)} <span className="text-[8px]">HORAS</span>
                                   </div>
-                                  <div className="text-[10px] text-[#FF8C00] uppercase tracking-wider font-bold mt-2 pt-2 border-t border-white/5">
+                                  <div className="text-[10px] text-[#FF9500] uppercase tracking-wider font-bold mt-2 pt-2 border-t border-white/5">
                                     {act.isTimerRunning ? 'En Ejecución' : (act.state === 'finalizado' ? 'Finalizado' : 'Detenido')}
                                   </div>
                                 </div>
@@ -1523,7 +1606,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                             {/* Cambio de Accesorio */}
                             <div className="bg-[#121212] p-5 rounded-2xl border border-white/5 space-y-4">
                               <h4 className="text-white/70 font-medium flex items-center gap-2">
-                                <Wrench className="w-4 h-4 text-[#FF8C00]" />
+                                <Wrench className="w-4 h-4 text-[#FF9500]" />
                                 Cambio de Accesorio
                               </h4>
                               <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
@@ -1547,14 +1630,14 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                         type="date" 
                                         value={act.accessoryChangeStartTime ? act.accessoryChangeStartTime.toISOString().split('T')[0] : ''}
                                         onChange={(e) => handleManualAccessoryDateChange(act.id, 'accessoryChangeStartTime', e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF9500]/50" 
                                       />
                                       <input 
                                         type="time" 
                                         step="1"
                                         value={act.accessoryChangeStartTime ? act.accessoryChangeStartTime.toTimeString().slice(0, 8) : ''}
                                         onChange={(e) => handleManualAccessoryTimeChange(act.id, 'accessoryChangeStartTime', e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF9500]/50" 
                                       />
                                     </div>
                                   </div>
@@ -1566,14 +1649,14 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                         type="date" 
                                         value={act.accessoryChangeEndTime ? act.accessoryChangeEndTime.toISOString().split('T')[0] : ''}
                                         onChange={(e) => handleManualAccessoryDateChange(act.id, 'accessoryChangeEndTime', e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF9500]/50" 
                                       />
                                       <input 
                                         type="time" 
                                         step="1"
                                         value={act.accessoryChangeEndTime ? act.accessoryChangeEndTime.toTimeString().slice(0, 8) : ''}
                                         onChange={(e) => handleManualAccessoryTimeChange(act.id, 'accessoryChangeEndTime', e.target.value)}
-                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF8C00]/50" 
+                                        className="w-full bg-black/50 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF9500]/50" 
                                       />
                                     </div>
                                   </div>
@@ -1600,7 +1683,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                           {/* 3. Recursos y Accesorios */}
                           <div className="bg-[#121212] p-5 rounded-2xl border border-white/5 space-y-4">
                             <h4 className="text-white/70 font-medium flex items-center gap-2">
-                              <User className="w-4 h-4 text-[#FF8C00]" />
+                              <User className="w-4 h-4 text-[#FF9500]" />
                               Recursos y Accesorios
                             </h4>
                             <div className="space-y-4">
@@ -1610,7 +1693,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                   <select 
                                     value={act.operator || ''}
                                     onChange={(e) => handleActivityChange(act.id, 'operator', e.target.value)}
-                                    className="w-full bg-black border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#FF8C00]/50 appearance-none"
+                                    className="w-full bg-black border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#FF9500]/50 appearance-none"
                                   >
                                     <option value="">Seleccionar Operador</option>
                                     <option value="Carlos Mendoza">Carlos Mendoza</option>
@@ -1622,7 +1705,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                   <select 
                                     value={act.machinery || ''}
                                     onChange={(e) => handleActivityChange(act.id, 'machinery', e.target.value)}
-                                    className="w-full bg-black border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#FF8C00]/50 appearance-none"
+                                    className="w-full bg-black border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#FF9500]/50 appearance-none"
                                   >
                                     <option value="">Seleccionar Maquinaria</option>
                                     <option value="John Deere | 5090E | ABC-123">John Deere | 5090E | ABC-123</option>
@@ -1641,7 +1724,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                       className={clsx(
                                         "px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
                                         act.accessories?.includes(acc)
-                                          ? "bg-[#FF8C00] text-black border-transparent"
+                                          ? "bg-[#FF9500] text-black border-transparent"
                                           : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10"
                                       )}
                                     >
@@ -1656,14 +1739,14 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                           {/* 4. Consumo y Métricas */}
                           <div className="bg-[#121212] p-5 rounded-2xl border border-white/5 space-y-4">
                             <h4 className="text-white/70 font-medium flex items-center gap-2">
-                              <Fuel className="w-4 h-4 text-[#FF8C00]" />
+                              <Fuel className="w-4 h-4 text-[#FF9500]" />
                               Consumo y Métricas
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div className="space-y-3">
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm text-white/70">Combustible</span>
-                                  <span className="text-xs text-[#FF8C00] bg-[#FF8C00]/10 px-2 py-1 rounded">Consumo: 15 L/h</span>
+                                  <span className="text-xs text-[#FF9500] bg-[#FF9500]/10 px-2 py-1 rounded">Consumo: 15 L/h</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                   <div>
@@ -1673,7 +1756,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                       placeholder="0.0" 
                                       value={act.horometerStart || ''}
                                       onChange={(e) => handleActivityChange(act.id, 'horometerStart', parseFloat(e.target.value))}
-                                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#FF8C00]/50" 
+                                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#FF9500]/50" 
                                     />
                                   </div>
                                   <div>
@@ -1683,7 +1766,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                       placeholder="0.0" 
                                       value={act.horometerEnd || ''}
                                       onChange={(e) => handleActivityChange(act.id, 'horometerEnd', parseFloat(e.target.value))}
-                                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#FF8C00]/50" 
+                                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#FF9500]/50" 
                                     />
                                   </div>
                                 </div>
@@ -1710,7 +1793,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                       placeholder="0.00" 
                                       value={act.area || ''}
                                       onChange={(e) => handleActivityChange(act.id, 'area', parseFloat(e.target.value))}
-                                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#FF8C00]/50 pl-9" 
+                                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#FF9500]/50 pl-9" 
                                     />
                                     <Ruler className="w-4 h-4 text-white/30 absolute left-3 top-1/2 -translate-y-1/2" />
                                   </div>
@@ -1724,7 +1807,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                             {/* Notas de la Actividad */}
                             <div id={`notes-${act.id}`} className="bg-[#121212] p-5 rounded-2xl border border-white/5 space-y-4">
                               <h4 className="text-white/70 font-medium flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-[#FF8C00]" />
+                                <FileText className="w-4 h-4 text-[#FF9500]" />
                                 Notas de la Actividad
                               </h4>
                               
@@ -1761,7 +1844,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                   <textarea
                                     id={`new-note-input-${act.id}`}
                                     placeholder="Escribir nueva nota aquí..."
-                                    className="w-full bg-black border border-white/10 rounded-xl p-4 pr-14 text-white text-sm focus:outline-none focus:border-[#FF8C00]/50 min-h-[80px] resize-none"
+                                    className="w-full bg-black border border-white/10 rounded-xl p-4 pr-14 text-white text-sm focus:outline-none focus:border-[#FF9500]/50 min-h-[80px] resize-none"
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
@@ -1777,7 +1860,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                       handleAddNote(act.id, input.value);
                                       input.value = '';
                                     }}
-                                    className="absolute bottom-3 right-3 p-2 bg-[#FF8C00] text-black rounded-lg hover:bg-[#FF8C00]/90 transition-colors"
+                                    className="absolute bottom-3 right-3 p-2 bg-[#FF9500] text-black rounded-lg hover:bg-[#FF9500]/90 transition-colors"
                                   >
                                     <Plus className="w-4 h-4" />
                                   </button>
@@ -1789,10 +1872,10 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                             {/* Nueva Sección de Evidencia Fotográfica */}
                             <div className="bg-[#0D0D0D] border border-white/5 rounded-2xl p-5 space-y-4">
                               <div className="flex items-center justify-between">
-                                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF8C00]/60">
+                                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF9500]/60">
                                   Evidencia Fotográfica
                                 </h4>
-                                <label className="p-2 bg-[#FF8C00]/10 text-[#FF8C00] rounded-xl hover:bg-[#FF8C00]/20 transition-colors cursor-pointer">
+                                <label className="p-2 bg-[#FF9500]/10 text-[#FF9500] rounded-xl hover:bg-[#FF9500]/20 transition-colors cursor-pointer">
                                   <input 
                                     type="file" 
                                     id={`photo-upload-${act.id}`}
@@ -1832,7 +1915,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                           placeholder="Agregar observación..."
                                           value={photo.observation}
                                           onChange={(e) => handlePhotoObservationChange(act.id, photo.id, e.target.value)}
-                                          className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#FF8C00]/50 resize-none h-16"
+                                          className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-[#FF9500]/50 resize-none h-16"
                                         />
                                       </div>
                                     </div>
@@ -1863,7 +1946,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                                   setExpandedActivityId(null);
                                 }}
                                 disabled={!isInProgress}
-                                className="flex-1 bg-[#FF8C00] text-black py-4 rounded-xl font-bold hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 bg-[#FF9500] text-black py-4 rounded-xl font-bold hover:bg-[#FF9500]/90 transition-colors shadow-lg shadow-[#FF9500]/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <CheckCircle2 className="w-5 h-5" />
                                 Finalizar Actividad
@@ -1884,9 +1967,9 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mt-10 p-8 bg-[#FF8C00]/5 rounded-[2.5rem] border border-[#FF8C00]/20 text-center space-y-6"
+              className="mt-10 p-8 bg-[#FF9500]/5 rounded-[2.5rem] border border-[#FF9500]/20 text-center space-y-6"
             >
-              <div className="w-20 h-20 bg-[#FF8C00] rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-[#FF8C00]/30">
+              <div className="w-20 h-20 bg-[#FF9500] rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-[#FF9500]/30">
                 <CheckCircle2 className="w-10 h-10 text-black" />
               </div>
               <div className="space-y-2">
@@ -1897,7 +1980,7 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
               </div>
               <button 
                 onClick={() => onGoBack()}
-                className="w-full bg-[#FF8C00] text-black py-5 rounded-2xl font-bold text-lg hover:bg-[#FF8C00]/90 transition-all shadow-xl shadow-[#FF8C00]/20 flex items-center justify-center gap-3"
+                className="w-full bg-[#FF9500] text-black py-5 rounded-2xl font-bold text-lg hover:bg-[#FF9500]/90 transition-all shadow-xl shadow-[#FF9500]/20 flex items-center justify-center gap-3"
               >
                 Finalizar Preparación de Tierra
                 <ChevronRight className="w-6 h-6" />
@@ -1941,8 +2024,8 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                 {/* Notas */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-[#FF8C00]" />
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-[#FF8C00]">Notas Registradas</h4>
+                    <FileText className="w-4 h-4 text-[#FF9500]" />
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-[#FF9500]">Notas Registradas</h4>
                   </div>
                   <div className="space-y-3">
                     {activities.find(a => a.id === historyActivityId)?.notes?.length ? (
@@ -1967,8 +2050,8 @@ const PrepFormView = ({ onGoBack, onConfirm, initialTask }: { onGoBack: () => vo
                 {/* Fotos */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-[#FF8C00]" />
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-[#FF8C00]">Evidencia Fotográfica</h4>
+                    <ImageIcon className="w-4 h-4 text-[#FF9500]" />
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-[#FF9500]">Evidencia Fotográfica</h4>
                   </div>
                   {activities.find(a => a.id === historyActivityId)?.photos?.length ? (
                     <div className="grid grid-cols-1 gap-6">
@@ -2046,7 +2129,7 @@ const PrepView = ({ tasks, onGoHome, onNewPrep, onSelectTask }: { tasks: PrepTas
         <div className="flex items-center gap-6">
           <button 
             onClick={onGoHome}
-            className="p-3 bg-[#0D0D0D] text-[#FF8C00] rounded-2xl hover:bg-[#FF8C00]/10 transition-colors shadow-lg"
+            className="p-3 bg-[#0D0D0D] text-[#FF9500] rounded-2xl hover:bg-[#FF9500]/10 transition-colors shadow-lg"
             title="Volver al Inicio"
           >
             <Home className="w-6 h-6" />
@@ -2054,7 +2137,7 @@ const PrepView = ({ tasks, onGoHome, onNewPrep, onSelectTask }: { tasks: PrepTas
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-white">Preparación de Tierra</h1>
             <div className="flex items-center gap-2 mt-2">
-              <MapPin className="w-4 h-4 text-[#FF8C00]" />
+              <MapPin className="w-4 h-4 text-[#FF9500]" />
               <span className="text-sm font-medium text-white/50 uppercase tracking-wider">Hacienda Puricaure</span>
             </div>
           </div>
@@ -2062,7 +2145,7 @@ const PrepView = ({ tasks, onGoHome, onNewPrep, onSelectTask }: { tasks: PrepTas
         
         <button 
           onClick={onNewPrep}
-          className="flex items-center justify-center gap-2 bg-[#FF8C00] text-black px-6 py-4 rounded-2xl font-bold hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20"
+          className="flex items-center justify-center gap-2 bg-[#FF9500] text-black px-6 py-4 rounded-2xl font-bold hover:bg-[#FF9500]/90 transition-colors shadow-lg shadow-[#FF9500]/20"
         >
           <Plus className="w-5 h-5" />
           Iniciar Nueva Labor
@@ -2074,29 +2157,29 @@ const PrepView = ({ tasks, onGoHome, onNewPrep, onSelectTask }: { tasks: PrepTas
         {/* Search Bar */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-[#FF8C00]" />
+            <Search className="h-5 w-5 text-[#FF9500]" />
           </div>
           <input
             type="text"
             placeholder="Buscar por ID o Lote..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="block w-full pl-12 pr-4 py-4 bg-black border border-[#FF8C00]/50 rounded-2xl text-[#FF8C00] placeholder-white/20 focus:outline-none focus:border-[#FF8C00] focus:ring-1 focus:ring-[#FF8C00] transition-all"
+            className="block w-full pl-12 pr-4 py-4 bg-black border border-[#FF9500]/50 rounded-2xl text-[#FF9500] placeholder-white/20 focus:outline-none focus:border-[#FF9500] focus:ring-1 focus:ring-[#FF9500] transition-all"
           />
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-4">
+        <div className="grid grid-cols-3 gap-2">
           <select
             value={filterEstado}
             onChange={(e) => setFilterEstado(e.target.value)}
             className={clsx(
               "bg-black border rounded-xl px-5 py-3 text-sm focus:outline-none transition-all appearance-none pr-12 relative",
               filterEstado !== 'Todos' 
-                ? "border-[#FF8C00]/50 text-[#FF8C00]" 
+                ? "border-[#FF9500]/50 text-[#FF9500]" 
                 : "border-white/5 text-white/70 hover:border-white/10"
             )}
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF9500'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
           >
             <option value="Todos">Todos los Estados</option>
             <option value="En Proceso">En Proceso</option>
@@ -2110,10 +2193,10 @@ const PrepView = ({ tasks, onGoHome, onNewPrep, onSelectTask }: { tasks: PrepTas
             className={clsx(
               "bg-black border rounded-xl px-5 py-3 text-sm focus:outline-none transition-all appearance-none pr-12",
               filterActividad !== 'Todas' 
-                ? "border-[#FF8C00]/50 text-[#FF8C00]" 
+                ? "border-[#FF9500]/50 text-[#FF9500]" 
                 : "border-white/5 text-white/70 hover:border-white/10"
             )}
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF9500'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
           >
             <option value="Todas">Todas las Actividades</option>
             {uniqueActividades.map(act => (
@@ -2127,10 +2210,10 @@ const PrepView = ({ tasks, onGoHome, onNewPrep, onSelectTask }: { tasks: PrepTas
             className={clsx(
               "bg-black border rounded-xl px-5 py-3 text-sm focus:outline-none transition-all appearance-none pr-12",
               filterLote !== 'Todos' 
-                ? "border-[#FF8C00]/50 text-[#FF8C00]" 
+                ? "border-[#FF9500]/50 text-[#FF9500]" 
                 : "border-white/5 text-white/70 hover:border-white/10"
             )}
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF9500'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
           >
             <option value="Todos">Todos los Lotes</option>
             {uniqueLotes.map(lote => (
@@ -2203,13 +2286,13 @@ const PrepView = ({ tasks, onGoHome, onNewPrep, onSelectTask }: { tasks: PrepTas
                     <div className="flex items-center gap-2">
                       {task.estado === 'En Proceso' && (
                         <div className="relative flex h-3 w-3">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF8C00] opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-[#FF8C00] shadow-[0_0_8px_#FF8C00]"></span>
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF9500] opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-[#FF9500] shadow-[0_0_8px_#FF9500]"></span>
                         </div>
                       )}
                       <span className={clsx(
                         "font-medium",
-                        task.estado === 'En Proceso' ? "text-[#FF8C00]" : 
+                        task.estado === 'En Proceso' ? "text-[#FF9500]" : 
                         task.estado === 'Finalizado' ? "text-emerald-500" : "text-white/50"
                       )}>
                         {task.estado}
@@ -2266,13 +2349,13 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline, onGoHome 
         <div className="flex items-center gap-4">
           <button 
             onClick={onGoHome}
-            className="p-3 bg-[#0D0D0D] text-[#FF8C00] rounded-xl hover:bg-[#FF8C00]/10 transition-colors"
+            className="p-3 bg-[#0D0D0D] text-[#FF9500] rounded-xl hover:bg-[#FF9500]/10 transition-colors"
             title="Volver al Inicio"
           >
             <Home className="w-6 h-6" />
           </button>
           <div className="space-y-1">
-            <h1 className="text-4xl font-light tracking-tight text-[#FF8C00]">Registro de Semilla</h1>
+            <h1 className="text-4xl font-light tracking-tight text-[#FF9500]">Registro de Semilla</h1>
             <p className="text-[10px] font-bold text-white/50 uppercase tracking-[0.4em]">Panel de Control · High-End Edition</p>
           </div>
         </div>
@@ -2283,7 +2366,7 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline, onGoHome 
           className={cn(
             "px-8 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all uppercase tracking-widest",
             isOnline 
-              ? "bg-[#FF8C00] text-black hover:bg-[#FF8C00]/90" 
+              ? "bg-[#FF9500] text-black hover:bg-[#FF9500]/90" 
               : "bg-white/10 text-white/30 cursor-not-allowed"
           )}
         >
@@ -2294,13 +2377,13 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline, onGoHome 
 
       <div className="flex items-center gap-2 px-2 overflow-x-auto no-scrollbar pb-1">
         <div 
-          className="relative flex items-center gap-2 bg-[#0D0D0D] border border-white/5 rounded-lg px-3 py-1.5 hover:border-[#FF8C00]/30 transition-all cursor-pointer group shrink-0 min-w-[140px]"
+          className="relative flex items-center gap-2 bg-[#0D0D0D] border border-white/5 rounded-lg px-3 py-1.5 hover:border-[#FF9500]/30 transition-all cursor-pointer group shrink-0 min-w-[140px]"
           onClick={(e) => {
             const input = e.currentTarget.querySelector('input');
             if (input) input.showPicker?.() || input.focus();
           }}
         >
-          <Calendar className="w-3.5 h-3.5 text-[#FF8C00]/60 group-hover:text-[#FF8C00] transition-colors" />
+          <Calendar className="w-3.5 h-3.5 text-[#FF9500]/60 group-hover:text-[#FF9500] transition-colors" />
           <div className="flex flex-col">
             <span className="text-[7px] font-bold uppercase tracking-[0.2em] text-white/50">Filtrar Fecha</span>
             <input 
@@ -2308,19 +2391,19 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline, onGoHome 
               value={filterDate}
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#FF8C00] outline-none cursor-pointer [color-scheme:dark] w-full"
+              className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#FF9500] outline-none cursor-pointer [color-scheme:dark] w-full"
             />
           </div>
         </div>
         
-        <div className="relative flex items-center gap-2 bg-[#0D0D0D] border border-white/5 rounded-lg px-3 py-1.5 hover:border-[#FF8C00]/30 transition-all cursor-pointer group shrink-0 min-w-[140px]">
-          <ClipboardList className="w-3.5 h-3.5 text-[#FF8C00]/60 group-hover:text-[#FF8C00] transition-colors" />
+        <div className="relative flex items-center gap-2 bg-[#0D0D0D] border border-white/5 rounded-lg px-3 py-1.5 hover:border-[#FF9500]/30 transition-all cursor-pointer group shrink-0 min-w-[140px]">
+          <ClipboardList className="w-3.5 h-3.5 text-[#FF9500]/60 group-hover:text-[#FF9500] transition-colors" />
           <div className="flex flex-col flex-1">
             <span className="text-[7px] font-bold uppercase tracking-[0.2em] text-white/50">Filtrar Etapa</span>
             <select 
               value={filterStage}
               onChange={(e) => setFilterStage(e.target.value)}
-              className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#FF8C00] outline-none appearance-none cursor-pointer w-full [color-scheme:dark]"
+              className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#FF9500] outline-none appearance-none cursor-pointer w-full [color-scheme:dark]"
             >
               <option value="todos" className="bg-[#0D0D0D] text-white">Todas las Etapas</option>
               <option value="borrador" className="bg-[#0D0D0D] text-white">Borrador</option>
@@ -2328,11 +2411,11 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline, onGoHome 
               <option value="completado" className="bg-[#0D0D0D] text-white">Completado</option>
             </select>
           </div>
-          <ChevronRight className="w-2.5 h-2.5 text-[#FF8C00]/40 rotate-90 pointer-events-none" />
+          <ChevronRight className="w-2.5 h-2.5 text-[#FF9500]/40 rotate-90 pointer-events-none" />
         </div>
 
-        <div className="relative flex items-center gap-2 bg-[#0D0D0D] border border-white/5 rounded-lg px-3 py-1.5 hover:border-[#FF8C00]/30 transition-all group flex-1 min-w-[160px]">
-          <Search className="w-3.5 h-3.5 text-[#FF8C00]/60 group-hover:text-[#FF8C00] transition-colors" />
+        <div className="relative flex items-center gap-2 bg-[#0D0D0D] border border-white/5 rounded-lg px-3 py-1.5 hover:border-[#FF9500]/30 transition-all group flex-1 min-w-[160px]">
+          <Search className="w-3.5 h-3.5 text-[#FF9500]/60 group-hover:text-[#FF9500] transition-colors" />
           <div className="flex flex-col flex-1">
             <span className="text-[7px] font-bold uppercase tracking-[0.2em] text-white/50">Buscar</span>
             <input 
@@ -2340,14 +2423,14 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline, onGoHome 
               placeholder="Proveedor o Compra..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#FF8C00] outline-none placeholder:text-[#FF8C00]/20 w-full"
+              className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#FF9500] outline-none placeholder:text-[#FF9500]/20 w-full"
             />
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           <div className="bg-[#0D0D0D] border border-white/5 rounded-lg px-3 py-1.5 flex items-center justify-center min-w-[70px]">
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF8C00]">
+            <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF9500]">
               {currentPage} <span className="text-white/40 mx-0.5">/</span> {totalPages}
             </span>
           </div>
@@ -2356,14 +2439,14 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline, onGoHome 
             <button 
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="p-1.5 rounded-lg bg-[#0D0D0D] border border-white/5 text-[#FF8C00] hover:bg-[#FF8C00]/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+              className="p-1.5 rounded-lg bg-[#0D0D0D] border border-white/5 text-[#FF9500] hover:bg-[#FF9500]/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <button 
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="p-1.5 rounded-lg bg-[#0D0D0D] border border-white/5 text-[#FF8C00] hover:bg-[#FF8C00]/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+              className="p-1.5 rounded-lg bg-[#0D0D0D] border border-white/5 text-[#FF9500] hover:bg-[#FF9500]/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
@@ -2373,7 +2456,7 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline, onGoHome 
         {(filterDate || filterStage !== 'todos' || searchTerm) && (
           <button 
             onClick={() => { setFilterDate(''); setFilterStage('todos'); setSearchTerm(''); }}
-            className="px-2 py-1.5 text-[9px] font-bold uppercase tracking-widest text-white/50 hover:text-[#FF8C00] transition-colors flex items-center gap-1 shrink-0"
+            className="px-2 py-1.5 text-[9px] font-bold uppercase tracking-widest text-white/50 hover:text-[#FF9500] transition-colors flex items-center gap-1 shrink-0"
           >
             <X className="w-2.5 h-2.5" />
             Limpiar
@@ -2407,7 +2490,7 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline, onGoHome 
                   <td className="px-8 py-6">
                     <div className="flex flex-col gap-1">
                       <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">{v.id}</span>
-                      <span className="text-lg font-medium text-[#FF8C00] block truncate max-w-[200px]">
+                      <span className="text-lg font-medium text-[#FF9500] block truncate max-w-[200px]">
                         {v.transbordos && v.transbordos.length > 0 
                           ? v.transbordos[v.transbordos.length - 1].chofer_nuevo 
                           : v.chofer || '---'}
@@ -2427,14 +2510,14 @@ const ListView = ({ vehicles, onNewVehicle, onSelectVehicle, isOnline, onGoHome 
                     <div className={cn(
                       "inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
                       v.estado === 'borrador' ? "bg-white/5 text-white/40" :
-                      v.estado === 'espera' ? "bg-[#FF8C00]/10 text-[#FF8C00]" :
-                      "bg-[#FF8C00] text-black"
+                      v.estado === 'espera' ? "bg-[#FF9500]/10 text-[#FF9500]" :
+                      "bg-[#FF9500] text-black"
                     )}>
                       {v.estado}
                     </div>
                   </td>
                   <td className="px-8 py-6 text-right">
-                    <ChevronRight className="w-5 h-5 text-white/40 group-hover:text-[#FF8C00] transition-all group-hover:translate-x-1 inline-block" />
+                    <ChevronRight className="w-5 h-5 text-white/40 group-hover:text-[#FF9500] transition-all group-hover:translate-x-1 inline-block" />
                   </td>
                 </tr>
               ))
@@ -2452,18 +2535,35 @@ const FormView = ({
   setSelectedVehicle, 
   onConfirmRegistration,
   computedPicking,
-  setIsSigning
+  setIsSigning,
+  muestreos,
+  setMuestreos,
+  setSelectedMuestreo,
+  handleCreateMuestreo
 }: { 
   selectedVehicle: Vehicle | null, 
   setView: (v: any) => void, 
   setSelectedVehicle: (v: any) => void,
   onConfirmRegistration: () => void,
   computedPicking: string,
-  setIsSigning: (v: boolean) => void
+  setIsSigning: (v: boolean) => void,
+  muestreos: Muestreo[],
+  setMuestreos: React.Dispatch<React.SetStateAction<Muestreo[]>>,
+  setSelectedMuestreo: (m: Muestreo | null) => void,
+  handleCreateMuestreo: (poId: string, proveedor: string) => Muestreo
 }) => {
   if (!selectedVehicle) return null;
   const isLocked = selectedVehicle.estado !== 'borrador';
   const isPickingOccupied = selectedVehicle.proveedor === 'Semillas del Norte';
+
+  const associatedMuestreo = muestreos.find(m => m.compraAsociada === selectedVehicle.compra);
+
+  const handlePOChange = (poId: string) => {
+    if (isLocked) return;
+    
+    // Update vehicle
+    setSelectedVehicle({...selectedVehicle, compra: poId});
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-24">
@@ -2471,164 +2571,226 @@ const FormView = ({
         <div className="flex items-center gap-6">
           <button 
             onClick={() => setView('dashboard')}
-            className="p-2 bg-[#0D0D0D] text-[#FF8C00] rounded-xl hover:bg-[#FF8C00]/10 transition-colors"
+            className="p-2 bg-[#0D0D0D] text-[#FF9500] rounded-xl hover:bg-[#FF9500]/10 transition-colors"
             title="Volver al Inicio"
           >
             <Home className="w-5 h-5" />
           </button>
-          <button onClick={() => setView('list')} className="flex items-center gap-4 text-white/40 hover:text-[#FF8C00] transition-colors group">
+          <button onClick={() => setView('list')} className="flex items-center gap-4 text-white/40 hover:text-[#FF9500] transition-colors group">
             <ArrowLeft className="w-5 h-5" />
             <span className="text-xs font-bold tracking-widest uppercase">Volver</span>
           </button>
         </div>
         <div className="text-right space-y-1">
           <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">ID Registro</p>
-          <p className="text-xl font-medium text-[#FF8C00]">{selectedVehicle.id}</p>
+          <p className="text-xl font-medium text-[#FF9500]">{selectedVehicle.id}</p>
         </div>
       </div>
 
-      <div className="bg-[#0D0D0D] rounded-3xl p-8 md:p-10 shadow-2xl border border-white/5 space-y-8">
-        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-          <UserCheck className="w-6 h-6 text-[#FF8C00]/60" />
-          <h2 className="text-xl font-medium uppercase tracking-widest">Identificación</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ElevatedSelect 
-            label="Chofer (Odoo Master)" 
-            icon={User} 
-            options={MOCK_CHOFERES}
-            value={selectedVehicle.chofer}
-            onChange={(e: any) => setSelectedVehicle({...selectedVehicle, chofer: e.target.value})}
-            disabled={isLocked}
-          />
-          <ElevatedSelect 
-            label="Proveedor" 
-            icon={MapPin}
-            options={MOCK_PROVEEDORES}
-            value={selectedVehicle.proveedor}
-            onChange={(e: any) => setSelectedVehicle({...selectedVehicle, proveedor: e.target.value, compra: ''})}
-            disabled={isLocked}
-          />
-          <ElevatedSelect 
-            label="Orden de Compra" 
-            icon={ClipboardList}
-            options={selectedVehicle.proveedor ? MOCK_COMPRAS[selectedVehicle.proveedor] : []}
-            value={selectedVehicle.compra}
-            onChange={(e: any) => setSelectedVehicle({...selectedVehicle, compra: e.target.value})}
-            disabled={isLocked || !selectedVehicle.proveedor}
-          />
-          <ElevatedSelect 
-            label="Finca" 
-            icon={MapPin}
-            options={MOCK_FINCAS}
-            value={selectedVehicle.finca || ''}
-            onChange={(e: any) => setSelectedVehicle({...selectedVehicle, finca: e.target.value})}
-            disabled={isLocked}
-          />
-          <ElevatedSelect 
-            label="Semillero" 
-            icon={Package}
-            options={MOCK_SEMILLEROS}
-            value={selectedVehicle.semillero || ''}
-            onChange={(e: any) => setSelectedVehicle({...selectedVehicle, semillero: e.target.value})}
-            disabled={isLocked}
-          />
-          <ElevatedSelect 
-            label="Despachador" 
-            icon={UserCheck}
-            options={MOCK_DESPACHADORES}
-            value={selectedVehicle.despachador || ''}
-            onChange={(e: any) => setSelectedVehicle({...selectedVehicle, despachador: e.target.value})}
-            disabled={isLocked}
-          />
-          
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-white/50 ml-1">Fecha de Registro</label>
-            <div className="flex items-center gap-3 bg-black/40 border border-white/5 rounded-lg py-3 px-4 hover:border-[#FF8C00]/30 transition-all group">
-              <Calendar className="w-4 h-4 text-[#FF8C00]/60 group-hover:text-[#FF8C00] transition-colors" />
-              <input 
-                type="date" 
-                value={selectedVehicle.fecha_creacion}
-                onChange={(e) => setSelectedVehicle({...selectedVehicle, fecha_creacion: e.target.value})}
-                disabled={isLocked}
-                className="bg-transparent text-sm font-medium text-[#FF8C00] outline-none w-full [color-scheme:dark] disabled:opacity-50"
-              />
+      <div className="space-y-6">
+        <div className="bg-[#0D0D0D] rounded-3xl p-6 md:p-8 shadow-2xl border border-white/5 space-y-8">
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-8 h-8 rounded-xl bg-[#FF9500]/10 flex items-center justify-center">
+              <Truck className="w-4 h-4 text-[#FF9500]" />
             </div>
+            <h2 className="text-sm font-bold text-white/90 uppercase tracking-[0.2em]">Identificación</h2>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-white/50 ml-1">Picking Odoo</label>
-            <div className="flex gap-4">
-              <div className={cn(
-                "flex-1 bg-black/40 border border-white/5 rounded-lg py-3 px-4 flex items-center justify-between transition-all",
-                isPickingOccupied && "border-red-500/20 bg-red-500/[0.02]"
-              )}>
-                <span className={cn(
-                  "text-sm font-medium",
-                  isPickingOccupied ? "text-red-400" : "text-[#FF8C00]/80"
-                )}>
-                  {isPickingOccupied ? 'No disponible' : (computedPicking || '---')}
-                </span>
-                {isPickingOccupied && <AlertCircle className="w-4 h-4 text-red-400 animate-pulse" />}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ElevatedSelect 
+              label="Chofer (Odoo Master)" 
+              icon={User} 
+              options={MOCK_CHOFERES}
+              value={selectedVehicle.chofer}
+              onChange={(e: any) => setSelectedVehicle({...selectedVehicle, chofer: e.target.value})}
+              disabled={isLocked}
+            />
+            <ElevatedSelect 
+              label="Proveedor" 
+              icon={MapPin}
+              options={MOCK_PROVEEDORES}
+              value={selectedVehicle.proveedor}
+              onChange={(e: any) => setSelectedVehicle({...selectedVehicle, proveedor: e.target.value, compra: ''})}
+              disabled={isLocked}
+            />
+            <ElevatedSelect 
+              label="Orden de Compra" 
+              icon={ClipboardList}
+              options={selectedVehicle.proveedor ? MOCK_COMPRAS[selectedVehicle.proveedor] : []}
+              value={selectedVehicle.compra}
+              onChange={(e: any) => handlePOChange(e.target.value)}
+              disabled={isLocked || !selectedVehicle.proveedor}
+            />
+
+            <ElevatedSelect 
+              label="Finca" 
+              icon={MapPin}
+              options={MOCK_FINCAS}
+              value={selectedVehicle.finca || ''}
+              onChange={(e: any) => setSelectedVehicle({...selectedVehicle, finca: e.target.value})}
+              disabled={isLocked}
+            />
+
+            <ElevatedSelect 
+              label="Semillero" 
+              icon={Package}
+              options={MOCK_SEMILLEROS}
+              value={selectedVehicle.semillero || ''}
+              onChange={(e: any) => setSelectedVehicle({...selectedVehicle, semillero: e.target.value})}
+              disabled={isLocked}
+            />
+            <ElevatedSelect 
+              label="Despachador" 
+              icon={UserCheck}
+              options={MOCK_DESPACHADORES}
+              value={selectedVehicle.despachador || ''}
+              onChange={(e: any) => setSelectedVehicle({...selectedVehicle, despachador: e.target.value})}
+              disabled={isLocked}
+            />
+            
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 ml-1">Fecha de Registro</label>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                  <Calendar className="w-4 h-4 text-[#FF9500]/40 group-focus-within:text-[#FF9500] transition-colors" />
+                </div>
+                <div className="w-full bg-black border border-white/10 rounded-xl py-3.5 pl-11 pr-4 transition-all focus-within:border-[#FF9500] focus-within:ring-1 focus-within:ring-[#FF9500] hover:border-white/20">
+                  <input 
+                    type="date" 
+                    value={selectedVehicle.fecha_creacion}
+                    onChange={(e) => setSelectedVehicle({...selectedVehicle, fecha_creacion: e.target.value})}
+                    disabled={isLocked}
+                    className="bg-transparent text-sm font-medium text-white outline-none w-full [color-scheme:dark] disabled:opacity-50"
+                  />
+                </div>
               </div>
-              {isPickingOccupied && !isLocked && (
-                <button className="bg-[#FF8C00]/10 text-[#FF8C00] px-4 rounded-lg flex items-center justify-center hover:bg-[#FF8C00]/20 transition-all border border-[#FF8C00]/20">
-                  <Plus className="w-5 h-5" />
-                </button>
-              )}
             </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 ml-1">Picking Odoo</label>
+              <div className="flex gap-4">
+                <div className={cn(
+                  "flex-1 bg-black border border-white/10 rounded-xl py-3.5 px-4 flex items-center justify-between transition-all",
+                  isPickingOccupied && "border-red-500/20 bg-red-500/[0.02]"
+                )}>
+                  <span className={cn(
+                    "text-sm font-medium",
+                    isPickingOccupied ? "text-red-400" : "text-white"
+                  )}>
+                    {isPickingOccupied ? 'No disponible' : (computedPicking || '---')}
+                  </span>
+                  {isPickingOccupied && <AlertCircle className="w-4 h-4 text-red-400 animate-pulse" />}
+                </div>
+                {isPickingOccupied && !isLocked && (
+                  <button className="bg-[#FF9500]/10 text-[#FF9500] px-4 rounded-xl flex items-center justify-center hover:bg-[#FF9500]/20 transition-all border border-[#FF9500]/20">
+                    <Plus className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {associatedMuestreo && (
+              <div className="md:col-span-2 flex items-center justify-between bg-[#FF9500]/10 border border-[#FF9500]/20 p-3 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300 h-[60px]">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full bg-[#FF9500]/20 flex items-center justify-center">
+                    <AlertCircle className="w-3.5 h-3.5 text-[#FF9500]" />
+                  </div>
+                  <p className="text-xs font-medium text-[#FF9500] whitespace-nowrap">Muestreo ya existente para esta compra</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setSelectedMuestreo(associatedMuestreo);
+                    setView('muestreo-form');
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-[#FF9500] text-black rounded-lg text-[10px] font-bold hover:bg-[#FF9500]/90 transition-all shadow-lg shadow-[#FF9500]/20 whitespace-nowrap"
+                >
+                  <Eye className="w-3 h-3" />
+                  Ver Muestreo
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {selectedVehicle.compra && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-white/5">
-            <div className="bg-black/40 border border-white/5 rounded-2xl p-5 flex items-center justify-between group hover:border-[#FF8C00]/20 transition-all">
-              <div className="space-y-1">
-                <span className="text-[8px] font-bold uppercase tracking-[0.4em] text-white/50">Pendientes por Recibir</span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-light text-[#FF8C00] tracking-tighter">
-                    {selectedVehicle.compra === 'PO-2024-001' ? '1,250' : 
-                     selectedVehicle.compra === 'PO-2024-002' ? '800' : 
-                     selectedVehicle.compra === 'PO-2024-003' ? '2,100' : '0'}
-                  </span>
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Costales</span>
-                </div>
+          <div className="bg-[#0D0D0D] rounded-3xl p-6 md:p-8 shadow-2xl border border-white/5 space-y-6">
+            <div className="flex items-center gap-3 px-2">
+              <div className="w-8 h-8 rounded-xl bg-[#FF9500]/10 flex items-center justify-center">
+                <Package className="w-4 h-4 text-[#FF9500]" />
               </div>
-              <div className="p-3 rounded-xl bg-white/[0.02] text-white/40 group-hover:text-[#FF8C00]/40 transition-colors">
-                <Package className="w-6 h-6" />
-              </div>
+              <h2 className="text-sm font-bold text-white/90 uppercase tracking-[0.2em]">Detalles de la Compra</h2>
             </div>
 
-            <div className="bg-black/40 border border-white/5 rounded-2xl p-5 flex items-center justify-between group hover:border-[#FF8C00]/20 transition-all">
-              <div className="space-y-1">
-                <span className="text-[8px] font-bold uppercase tracking-[0.4em] text-white/50">Producto a Recibir</span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-light text-[#FF8C00] tracking-tighter">Semilla de Piña</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-black border border-white/10 rounded-2xl p-6 flex items-center justify-between group hover:border-[#FF9500]/20 transition-all shadow-xl">
+                <div className="space-y-2">
+                  <span className="text-[8px] font-bold uppercase tracking-[0.3em] text-white/30">Pendientes por Recibir</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-light text-white tracking-tighter">
+                      {selectedVehicle.compra === 'PO-2024-001' ? '1,250' : 
+                       selectedVehicle.compra === 'PO-2024-002' ? '800' : 
+                       selectedVehicle.compra === 'PO-2024-003' ? '2,100' : '0'}
+                    </span>
+                    <span className="text-[10px] font-bold text-[#FF9500] uppercase tracking-widest">Costales</span>
+                  </div>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-[#FF9500]/5 flex items-center justify-center text-[#FF9500]/40 group-hover:text-[#FF9500] transition-all group-hover:scale-110">
+                  <Package className="w-6 h-6" />
                 </div>
               </div>
-              <div className="p-3 rounded-xl bg-white/[0.02] text-white/40 group-hover:text-[#FF8C00]/40 transition-colors">
-                <Truck className="w-6 h-6" />
+
+              <div className="bg-black border border-white/10 rounded-2xl p-6 flex items-center justify-between group hover:border-[#FF9500]/20 transition-all shadow-xl">
+                <div className="space-y-2">
+                  <span className="text-[8px] font-bold uppercase tracking-[0.3em] text-white/30">Producto a Recibir</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xl font-light text-white tracking-tighter">Semilla de Piña</span>
+                  </div>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-[#FF9500]/5 flex items-center justify-center text-[#FF9500]/40 group-hover:text-[#FF9500] transition-all group-hover:scale-110">
+                  <Truck className="w-6 h-6" />
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="pt-6 border-t border-white/5">
+        <div className="bg-[#0D0D0D] rounded-3xl p-6 md:p-8 shadow-2xl border border-white/5">
           {!isLocked ? (
             <button 
               onClick={onConfirmRegistration}
-              className="w-full bg-[#FF8C00] text-black py-4 rounded-lg font-bold text-sm shadow-lg hover:bg-[#FF8C00]/90 transition-all uppercase tracking-widest"
+              className="w-full bg-[#FF9500] text-black py-5 rounded-2xl font-bold text-sm shadow-xl hover:bg-[#FF9500]/90 transition-all uppercase tracking-[0.2em] hover:scale-[1.01] active:scale-[0.99]"
             >
               Confirmar Registro
             </button>
           ) : (
             <div className="flex flex-col gap-6">
+              {/* Muestreo Pendiente Section */}
+              {selectedVehicle.compra && muestreos.find(m => m.compraAsociada === selectedVehicle.compra && m.estado !== 'Finalizado') && (
+                <div className="w-full p-6 rounded-2xl bg-[#FF9500]/5 border border-[#FF9500]/20 flex flex-col items-center gap-4 animate-pulse shadow-[0_0_30px_rgba(255,149,0,0.05)]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#FF9500] animate-ping" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#FF9500]">Muestreo pendiente por procesar</span>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      const m = muestreos.find(m => m.compraAsociada === selectedVehicle.compra && m.estado !== 'Finalizado');
+                      if (m) {
+                        setSelectedMuestreo(m);
+                        setView('muestreo-form');
+                      }
+                    }}
+                    className="w-full py-4 rounded-xl bg-[#FF9500] text-black text-xs font-black uppercase tracking-widest hover:bg-[#FF9500]/90 transition-all flex items-center justify-center gap-3 shadow-lg"
+                  >
+                    <Sprout className="w-5 h-5" />
+                    Ir al Muestreo
+                  </button>
+                </div>
+              )}
               {selectedVehicle.estado === 'completado' && (
                 <div className="bg-black/40 border border-white/5 rounded-2xl p-6 md:p-8 space-y-6 shadow-inner">
                   <div className="flex items-center gap-4 border-b border-white/5 pb-4">
-                    <Calculator className="w-5 h-5 text-[#FF8C00]/60" />
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-[#FF8C00]">Resumen de Operación</h3>
+                    <Calculator className="w-5 h-5 text-[#FF9500]/60" />
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-[#FF9500]">Resumen de Operación</h3>
                   </div>
                   
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
@@ -2640,16 +2802,16 @@ const FormView = ({
                       <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/50 mb-1">Semillas x Costal</p>
                       <p className="text-3xl font-light text-white/90">{selectedVehicle.semillas_x_costal}</p>
                     </div>
-                    <div className="col-span-2 md:col-span-1 bg-[#FF8C00]/5 border border-[#FF8C00]/20 rounded-xl p-4 flex flex-col items-center justify-center text-center">
-                      <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#FF8C00]/60 mb-1">Total Semillas</p>
-                      <p className="text-3xl font-medium text-[#FF8C00]">{(selectedVehicle.costales * selectedVehicle.semillas_x_costal).toLocaleString()}</p>
+                    <div className="col-span-2 md:col-span-1 bg-[#FF9500]/5 border border-[#FF9500]/20 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#FF9500]/60 mb-1">Total Semillas</p>
+                      <p className="text-3xl font-medium text-[#FF9500]">{(selectedVehicle.costales * selectedVehicle.semillas_x_costal).toLocaleString()}</p>
                     </div>
                   </div>
 
                   {selectedVehicle.transbordos && selectedVehicle.transbordos.length > 0 && (
                     <div className="pt-6 border-t border-white/5">
                       <div className="flex items-center gap-3 mb-4">
-                        <Truck className="w-4 h-4 text-[#FF8C00]/60" />
+                        <Truck className="w-4 h-4 text-[#FF9500]/60" />
                         <h4 className="text-xs font-bold uppercase tracking-widest text-white/70">Historial de Transbordos</h4>
                       </div>
                       <div className="space-y-3">
@@ -2662,8 +2824,8 @@ const FormView = ({
                               <div>
                                 <p className="text-sm font-medium text-white/80 flex items-center gap-2 flex-wrap">
                                   {t.chofer_anterior} 
-                                  <ChevronRight className="w-3 h-3 text-[#FF8C00]" /> 
-                                  <span className="text-[#FF8C00]">{t.chofer_nuevo}</span>
+                                  <ChevronRight className="w-3 h-3 text-[#FF9500]" /> 
+                                  <span className="text-[#FF9500]">{t.chofer_nuevo}</span>
                                 </p>
                                 <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">{new Date(t.timestamp).toLocaleString()}</p>
                               </div>
@@ -2684,13 +2846,13 @@ const FormView = ({
               <div className="w-full bg-white/[0.02] border border-white/5 rounded-lg py-4 px-6 flex items-center gap-4">
                 <CheckCircle2 className={cn(
                   "w-5 h-5",
-                  selectedVehicle.estado === 'completado' ? "text-emerald-500" : "text-[#FF8C00]/70"
+                  selectedVehicle.estado === 'completado' ? "text-emerald-500" : "text-[#FF9500]/70"
                 )} />
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">Estado</p>
                   <p className={cn(
                     "text-sm font-bold uppercase tracking-widest",
-                    selectedVehicle.estado === 'completado' ? "text-emerald-500" : "text-[#FF8C00]/80"
+                    selectedVehicle.estado === 'completado' ? "text-emerald-500" : "text-[#FF9500]/80"
                   )}>
                     {selectedVehicle.estado === 'completado' ? 'Registro Completado' : 'En Espera de Operación'}
                   </p>
@@ -2699,7 +2861,7 @@ const FormView = ({
               {selectedVehicle.estado !== 'completado' && (
                 <button 
                   onClick={() => setView('operation')}
-                  className="w-full bg-[#FF8C00] text-black py-5 rounded-lg font-bold text-lg shadow-xl hover:bg-[#FF8C00]/90 transition-all flex items-center justify-center gap-4 uppercase tracking-widest"
+                  className="w-full bg-[#FF9500] text-black py-5 rounded-lg font-bold text-lg shadow-xl hover:bg-[#FF9500]/90 transition-all flex items-center justify-center gap-4 uppercase tracking-widest"
                 >
                   <Calculator className="w-6 h-6" />
                   Registrar Valores
@@ -2716,7 +2878,7 @@ const FormView = ({
                   </button>
                   <button 
                     onClick={() => setIsSigning(true)}
-                    className="w-full bg-[#FF8C00]/10 text-[#FF8C00] py-4 rounded-lg font-bold text-sm shadow-xl hover:bg-[#FF8C00]/20 transition-all flex items-center justify-center gap-3 uppercase tracking-widest border border-[#FF8C00]/20"
+                    className="w-full bg-[#FF9500]/10 text-[#FF9500] py-4 rounded-lg font-bold text-sm shadow-xl hover:bg-[#FF9500]/20 transition-all flex items-center justify-center gap-3 uppercase tracking-widest border border-[#FF9500]/20"
                   >
                     <Truck className="w-5 h-5" />
                     Transbordo
@@ -2755,7 +2917,7 @@ const PhotoGallery = ({
         {!isCompleted && (
           <button 
             onClick={onAdd}
-            className="p-1.5 rounded-lg bg-[#FF8C00]/10 text-[#FF8C00] hover:bg-[#FF8C00]/20 transition-all"
+            className="p-1.5 rounded-lg bg-[#FF9500]/10 text-[#FF9500] hover:bg-[#FF9500]/20 transition-all"
           >
             <Camera className="w-4 h-4" />
           </button>
@@ -2783,7 +2945,7 @@ const PhotoGallery = ({
               )}
               {img.nota && (
                 <div className="absolute bottom-1 right-1 p-0.5 rounded-md bg-black/60">
-                  <ClipboardList className="w-2 h-2 text-[#FF8C00]" />
+                  <ClipboardList className="w-2 h-2 text-[#FF9500]" />
                 </div>
               )}
             </div>
@@ -2793,7 +2955,7 @@ const PhotoGallery = ({
             onClick={!isCompleted ? onAdd : undefined}
             className={cn(
               "flex-1 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-xl bg-white/[0.02] text-white/20 transition-all",
-              !isCompleted && "hover:border-[#FF8C00]/20 hover:bg-[#FF8C00]/[0.02] cursor-pointer"
+              !isCompleted && "hover:border-[#FF9500]/20 hover:bg-[#FF9500]/[0.02] cursor-pointer"
             )}
           >
             <ImageIcon className="w-5 h-5 mb-1 opacity-50" />
@@ -2831,14 +2993,14 @@ const ImageGalleryWizard = ({
       >
         <div className="p-6 md:p-8 flex justify-between items-center border-b border-white/5">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-[#FF8C00]">Galería de Evidencia</h3>
+            <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-[#FF9500]">Galería de Evidencia</h3>
             <p className="text-[10px] text-white/50 uppercase tracking-widest">{images.length} fotos capturadas</p>
           </div>
           <div className="flex items-center gap-2">
             {!isCompleted && (
               <button 
                 onClick={onAdd}
-                className="p-3 bg-[#FF8C00]/10 text-[#FF8C00] rounded-full hover:bg-[#FF8C00]/20 transition-all"
+                className="p-3 bg-[#FF9500]/10 text-[#FF9500] rounded-full hover:bg-[#FF9500]/20 transition-all"
               >
                 <Camera className="w-5 h-5" />
               </button>
@@ -2886,7 +3048,7 @@ const ImageGalleryWizard = ({
                     onChange={(e) => onUpdateNote(img.id, e.target.value)}
                     readOnly={isCompleted}
                     placeholder="Agregar nota..."
-                    className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-[11px] font-medium text-white/70 placeholder:text-white/10 outline-none focus:border-[#FF8C00]/20 transition-all resize-none h-20 custom-scrollbar"
+                    className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-[11px] font-medium text-white/70 placeholder:text-white/10 outline-none focus:border-[#FF9500]/20 transition-all resize-none h-20 custom-scrollbar"
                   />
                 </div>
               </div>
@@ -2932,8 +3094,8 @@ const ImageZoomModal = ({
         {image.nota && (
           <div className="w-full max-w-2xl bg-[#0D0D0D] p-6 rounded-2xl border border-white/10 shadow-xl">
             <div className="flex items-center gap-2 mb-2">
-              <ClipboardList className="w-4 h-4 text-[#FF8C00]" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF8C00]">Nota de Imagen</span>
+              <ClipboardList className="w-4 h-4 text-[#FF9500]" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF9500]">Nota de Imagen</span>
             </div>
             <p className="text-sm text-white/80 font-medium leading-relaxed">{image.nota}</p>
           </div>
@@ -2951,7 +3113,9 @@ const OperationView = ({
   updateValue, 
   setIsSigning,
   setDirectValue,
-  onFinalize
+  onFinalize,
+  muestreos,
+  setSelectedMuestreo
 }: { 
   selectedVehicle: Vehicle | null, 
   setView: (v: any) => void, 
@@ -2960,7 +3124,9 @@ const OperationView = ({
   updateValue: (field: any, delta: number) => void,
   setDirectValue: (field: any, value: number) => void,
   setIsSigning: (v: boolean) => void,
-  onFinalize: () => void
+  onFinalize: () => void,
+  muestreos: Muestreo[],
+  setSelectedMuestreo: (m: Muestreo | null) => void
 }) => {
   if (!selectedVehicle) return null;
   const [showObservations, setShowObservations] = useState(false);
@@ -3067,7 +3233,7 @@ const OperationView = ({
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setView('dashboard')}
-              className="p-2 hover:bg-white/5 rounded-full transition-colors text-[#FF8C00] hover:text-[#FF8C00]/80"
+              className="p-2 hover:bg-white/5 rounded-full transition-colors text-[#FF9500] hover:text-[#FF9500]/80"
               title="Volver al Inicio"
             >
               <Home className="w-5 h-5" />
@@ -3094,7 +3260,7 @@ const OperationView = ({
         </div>
         <div className="flex flex-col items-end">
           <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-white/50 mb-0.5">ID Registro</span>
-          <span className="text-[10px] md:text-sm font-mono text-[#FF8C00]/80">#{selectedVehicle.id.split('-')[0]}</span>
+          <span className="text-[10px] md:text-sm font-mono text-[#FF9500]/80">#{selectedVehicle.id.split('-')[0]}</span>
         </div>
       </header>
 
@@ -3103,11 +3269,11 @@ const OperationView = ({
         <div className="w-[95%] max-w-[420px] mx-auto bg-[#0D0D0D] rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 border border-white/5 shadow-[0_40px_120px_rgba(0,0,0,0.95)] relative flex flex-col items-center gap-4 md:gap-6">
           
           {/* Subtle background glow */}
-          <div className="absolute -top-24 -right-24 w-[15rem] h-[15rem] bg-[#FF8C00]/5 rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute -top-24 -right-24 w-[15rem] h-[15rem] bg-[#FF9500]/5 rounded-full blur-[80px] pointer-events-none" />
 
           {/* 4. Distribución del Conteo: Indicador 'Restantes' */}
-          <div className="px-3 py-1 rounded-full bg-[#FF8C00]/5 border border-[#FF8C00]/10">
-            <span className="text-[7px] md:text-[9px] font-bold uppercase tracking-[0.4em] text-[#FF8C00]/80">
+          <div className="px-3 py-1 rounded-full bg-[#FF9500]/5 border border-[#FF9500]/10">
+            <span className="text-[7px] md:text-[9px] font-bold uppercase tracking-[0.4em] text-[#FF9500]/80">
               {isCompleted ? 'Resumen de Registro' : `Costales Restantes: ${costalesRestantes}`}
             </span>
           </div>
@@ -3117,7 +3283,7 @@ const OperationView = ({
             <button 
               onClick={() => updateValue('costales', -1)}
               disabled={isCompleted}
-              className="w-10 h-10 md:w-14 md:h-14 rounded-full border border-white/5 flex items-center justify-center text-white/50 hover:border-[#FF8C00]/40 hover:text-[#FF8C00] hover:bg-[#FF8C00]/5 transition-all active:scale-90 shadow-lg disabled:opacity-0 disabled:pointer-events-none"
+              className="w-10 h-10 md:w-14 md:h-14 rounded-full border border-white/5 flex items-center justify-center text-white/50 hover:border-[#FF9500]/40 hover:text-[#FF9500] hover:bg-[#FF9500]/5 transition-all active:scale-90 shadow-lg disabled:opacity-0 disabled:pointer-events-none"
             >
               <Minus className="w-4 h-4 md:w-6 md:h-6" />
             </button>
@@ -3135,27 +3301,28 @@ const OperationView = ({
                 }}
                 placeholder="0"
                 disabled={isCompleted}
-                className="w-40 md:w-64 bg-transparent text-center text-[3.5rem] md:text-[5.5rem] font-medium text-[#FF8C00] tracking-tighter leading-none tabular-nums drop-shadow-[0_0_30px_rgba(255,140,0,0.15)] outline-none focus:text-white transition-colors placeholder:text-white/5"
+                className="w-40 md:w-64 bg-transparent text-center text-[3.5rem] md:text-[5.5rem] font-medium text-[#FF9500] tracking-tighter leading-none tabular-nums drop-shadow-[0_0_30px_rgba(255,149,0,0.15)] outline-none focus:text-white transition-colors placeholder:text-white/5"
               />
             </div>
 
             <button 
               onClick={() => updateValue('costales', 1)}
               disabled={isCompleted}
-              className="w-10 h-10 md:w-14 md:h-14 rounded-full border border-white/5 flex items-center justify-center text-white/50 hover:border-[#FF8C00]/40 hover:text-[#FF8C00] hover:bg-[#FF8C00]/5 transition-all active:scale-90 shadow-lg disabled:opacity-0 disabled:pointer-events-none"
+              className="w-10 h-10 md:w-14 md:h-14 rounded-full border border-white/5 flex items-center justify-center text-white/50 hover:border-[#FF9500]/40 hover:text-[#FF9500] hover:bg-[#FF9500]/5 transition-all active:scale-90 shadow-lg disabled:opacity-0 disabled:pointer-events-none"
             >
               <Plus className="w-4 h-4 md:w-6 md:h-6" />
             </button>
           </div>
 
-          {/* Secondary Metric: Semillas x Costal */}
+          {/* Secondary Metric: Semillas x Costal - HIDDEN: Moved to Muestreo module */}
+          {/* 
           <div className="w-full max-w-[200px] p-3 md:p-4 rounded-xl bg-black/40 border border-white/5 flex flex-col items-center gap-2 shadow-inner">
             <span className="text-[7px] md:text-[8px] font-bold uppercase tracking-[0.3em] text-white/50">Semillas por Costal</span>
             <div className="flex items-center justify-between w-full px-1">
               <button 
                 onClick={() => updateValue('semillas_x_costal', -1)} 
                 disabled={isCompleted}
-                className="p-1 text-white/60 hover:text-[#FF8C00] transition-colors disabled:opacity-0 disabled:pointer-events-none"
+                className="p-1 text-white/60 hover:text-[#FF9500] transition-colors disabled:opacity-0 disabled:pointer-events-none"
               >
                 <Minus className="w-3 h-3 md:w-4 md:h-4" />
               </button>
@@ -3170,17 +3337,18 @@ const OperationView = ({
                 }}
                 placeholder="0"
                 disabled={isCompleted}
-                className="w-20 bg-transparent text-center text-xl md:text-2xl font-bold text-white/90 tabular-nums outline-none focus:text-[#FF8C00] transition-colors placeholder:text-white/5"
+                className="w-20 bg-transparent text-center text-xl md:text-2xl font-bold text-white/90 tabular-nums outline-none focus:text-[#FF9500] transition-colors placeholder:text-white/5"
               />
               <button 
                 onClick={() => updateValue('semillas_x_costal', 1)} 
                 disabled={isCompleted}
-                className="p-1 text-white/60 hover:text-[#FF8C00] transition-colors disabled:opacity-0 disabled:pointer-events-none"
+                className="p-1 text-white/60 hover:text-[#FF9500] transition-colors disabled:opacity-0 disabled:pointer-events-none"
               >
                 <Plus className="w-3 h-3 md:w-4 md:h-4" />
               </button>
             </div>
           </div>
+          */}
 
           {/* 4. Botones de Acción: Fila inferior equilibrada */}
           <div className={cn(
@@ -3189,7 +3357,7 @@ const OperationView = ({
           )}>
             <button 
               onClick={() => setShowObservations(true)}
-              className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-white/[0.01] border border-white/5 text-white/60 hover:text-[#FF8C00] hover:border-[#FF8C00]/20 hover:bg-[#FF8C00]/[0.02] transition-all group"
+              className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-white/[0.01] border border-white/5 text-white/60 hover:text-[#FF9500] hover:border-[#FF9500]/20 hover:bg-[#FF9500]/[0.02] transition-all group"
             >
               <ClipboardList className="w-4 h-4 group-hover:scale-110 transition-transform" />
               <span className="text-[7px] font-bold uppercase tracking-[0.1em]">Nota</span>
@@ -3197,7 +3365,7 @@ const OperationView = ({
             {isCompleted && (
               <button 
                 onClick={() => setIsSigning(true)}
-                className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-white/[0.01] border border-white/5 text-white/60 hover:text-[#FF8C00] hover:border-[#FF8C00]/20 hover:bg-[#FF8C00]/[0.02] transition-all group"
+                className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-white/[0.01] border border-white/5 text-white/60 hover:text-[#FF9500] hover:border-[#FF9500]/20 hover:bg-[#FF9500]/[0.02] transition-all group"
               >
                 <Truck className="w-4 h-4 group-hover:scale-110 transition-transform" />
                 <span className="text-[7px] font-bold uppercase tracking-[0.1em]">Transbordo</span>
@@ -3205,7 +3373,7 @@ const OperationView = ({
             )}
             <button 
               onClick={() => setShowHistory(true)}
-              className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-white/[0.01] border border-white/5 text-white/60 hover:text-[#FF8C00] hover:border-[#FF8C00]/20 hover:bg-[#FF8C00]/[0.02] transition-all group"
+              className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl bg-white/[0.01] border border-white/5 text-white/60 hover:text-[#FF9500] hover:border-[#FF9500]/20 hover:bg-[#FF9500]/[0.02] transition-all group"
             >
               <History className="w-4 h-4 group-hover:scale-110 transition-transform" />
               <span className="text-[7px] font-bold uppercase tracking-[0.1em]">Historial</span>
@@ -3215,17 +3383,42 @@ const OperationView = ({
 
         {/* Finalize Action */}
         <div className="mt-4 md:mt-6 flex flex-col items-center gap-4 pb-24">
+          {/* Muestreo Pendiente Section */}
+          {selectedVehicle.compra && muestreos.find(m => m.compraAsociada === selectedVehicle.compra && m.estado !== 'Finalizado') && (
+            <div className="w-full max-w-[320px] p-4 rounded-2xl bg-[#FF9500]/5 border border-[#FF9500]/20 flex flex-col items-center gap-3 animate-pulse shadow-[0_0_20px_rgba(255,149,0,0.05)]">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#FF9500] animate-ping" />
+                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#FF9500]">Muestreo pendiente por procesar</span>
+              </div>
+              <button 
+                onClick={() => {
+                  const m = muestreos.find(m => m.compraAsociada === selectedVehicle.compra && m.estado !== 'Finalizado');
+                  if (m) {
+                    setSelectedMuestreo(m);
+                    setView('muestreo-form');
+                  }
+                }}
+                className="w-full py-2.5 rounded-xl bg-[#FF9500] text-black text-[10px] font-black uppercase tracking-widest hover:bg-[#FF9500]/90 transition-all flex items-center justify-center gap-2 shadow-lg"
+              >
+                <Sprout className="w-3.5 h-3.5" />
+                Ir al Muestreo
+              </button>
+            </div>
+          )}
+          {/* Total Computado - HIDDEN: Moved to Muestreo module */}
+          {/* 
           <div className="flex flex-col items-center">
             <span className="text-[7px] md:text-[9px] font-bold uppercase tracking-[0.4em] text-white/40 mb-1">Total Computado</span>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl md:text-5xl font-bold text-white/95 tracking-tighter">{(selectedVehicle.costales * selectedVehicle.semillas_x_costal).toLocaleString()}</span>
-              <span className="text-[8px] md:text-[10px] font-bold text-[#FF8C00]/60 uppercase tracking-[0.3em]">Semillas</span>
+              <span className="text-[8px] md:text-[10px] font-bold text-[#FF9500]/60 uppercase tracking-[0.3em]">Semillas</span>
             </div>
           </div>
+          */}
           {!isCompleted ? (
             <button 
               onClick={onFinalize}
-              className="px-8 md:px-12 py-3 md:py-4 rounded-lg md:rounded-xl bg-[#FF8C00] text-black font-black text-[9px] md:text-xs uppercase tracking-[0.3em] hover:bg-[#FF8C00]/90 transition-all shadow-[0_15px_40px_rgba(255,140,0,0.2)] active:scale-95"
+              className="px-8 md:px-12 py-3 md:py-4 rounded-lg md:rounded-xl bg-[#FF9500] text-black font-black text-[9px] md:text-xs uppercase tracking-[0.3em] hover:bg-[#FF9500]/90 transition-all shadow-[0_20px_50px_rgba(255,149,0,0.3)] active:scale-95"
             >
               Finalizar Registro
             </button>
@@ -3276,7 +3469,7 @@ const OperationView = ({
             >
               <div className="flex justify-between items-center mb-10">
                 <div className="space-y-1">
-                  <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#FF8C00]">Observaciones</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#FF9500]">Observaciones</h3>
                   <p className="text-[10px] text-white/50 uppercase tracking-widest">Anotaciones del registro</p>
                 </div>
                 <button onClick={() => setShowObservations(false)} className="p-3 hover:bg-white/5 rounded-full transition-colors text-white/50 hover:text-white">
@@ -3289,12 +3482,12 @@ const OperationView = ({
                 onChange={(e) => setTempNote(e.target.value)}
                 readOnly={isCompleted}
                 placeholder={isCompleted ? "Sin novedades registradas" : "Novedades del conteo..."}
-                className="w-full h-64 bg-black/40 border border-white/5 rounded-3xl p-8 text-base font-medium text-white/80 placeholder:text-white/5 outline-none focus:border-[#FF8C00]/20 transition-all resize-none custom-scrollbar"
+                className="w-full h-64 bg-black/40 border border-white/5 rounded-3xl p-8 text-base font-medium text-white/80 placeholder:text-white/5 outline-none focus:border-[#FF9500]/20 transition-all resize-none custom-scrollbar"
               />
               {!isCompleted && (
                 <button 
                   onClick={saveObservation}
-                  className="w-full mt-10 bg-[#FF8C00] text-black py-6 rounded-2xl font-black text-xs md:text-sm hover:bg-[#FF8C00]/90 transition-all uppercase tracking-[0.3em] shadow-xl"
+                  className="w-full mt-10 bg-[#FF9500] text-black py-6 rounded-2xl font-black text-xs md:text-sm hover:bg-[#FF9500]/90 transition-all uppercase tracking-[0.3em] shadow-xl"
                 >
                   Guardar Nota
                 </button>
@@ -3316,7 +3509,7 @@ const OperationView = ({
             >
               <div className="flex justify-between items-center mb-8">
                 <div className="space-y-1">
-                  <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#FF8C00]">Historial Completo</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#FF9500]">Historial Completo</h3>
                   <p className="text-[10px] text-white/50 uppercase tracking-widest">Eventos y transbordos</p>
                 </div>
                 <button onClick={() => setShowHistory(false)} className="p-3 hover:bg-white/5 rounded-full transition-colors text-white/50 hover:text-white">
@@ -3336,8 +3529,8 @@ const OperationView = ({
                         <div key={t.id} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
                           <div className="flex justify-between items-start">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-[#FF8C00]/10 flex items-center justify-center">
-                                <Truck className="w-4 h-4 text-[#FF8C00]" />
+                              <div className="w-8 h-8 rounded-full bg-[#FF9500]/10 flex items-center justify-center">
+                                <Truck className="w-4 h-4 text-[#FF9500]" />
                               </div>
                               <div>
                                 <p className="text-[10px] font-bold text-white/80">{t.chofer_anterior} → {t.chofer_nuevo}</p>
@@ -3417,7 +3610,7 @@ const OperationView = ({
                 onClick={() => { setShowImageSourceSelector(false); cameraInputRef.current?.click(); }}
                 className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
               >
-                <div className="w-12 h-12 rounded-full bg-[#FF8C00]/20 flex items-center justify-center text-[#FF8C00]">
+                <div className="w-12 h-12 rounded-full bg-[#FF9500]/20 flex items-center justify-center text-[#FF9500]">
                   <Camera className="w-6 h-6" />
                 </div>
                 <div className="flex flex-col items-start">
@@ -3454,7 +3647,7 @@ const OperationView = ({
               className="w-full max-w-lg bg-[#0D0D0D] rounded-[2.5rem] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,1)] flex flex-col overflow-hidden"
             >
               <div className="p-6 border-b border-white/5 flex justify-between items-center">
-                <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#FF8C00]">Confirmar Imagen</h3>
+                <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#FF9500]">Confirmar Imagen</h3>
                 <button onClick={() => setPendingImage(null)} className="p-2 text-white/50 hover:text-white transition-colors">
                   <X className="w-5 h-5" />
                 </button>
@@ -3471,13 +3664,13 @@ const OperationView = ({
                     value={pendingImageNote}
                     onChange={(e) => setPendingImageNote(e.target.value)}
                     placeholder="Ej. Sello de seguridad roto..."
-                    className="w-full h-24 bg-white/5 border border-white/10 rounded-2xl p-4 text-sm text-white placeholder:text-white/20 outline-none focus:border-[#FF8C00]/50 transition-colors resize-none"
+                    className="w-full h-24 bg-white/5 border border-white/10 rounded-2xl p-4 text-sm text-white placeholder:text-white/20 outline-none focus:border-[#FF9500]/50 transition-colors resize-none"
                   />
                 </div>
                 
                 <button 
                   onClick={savePendingImage}
-                  className="w-full py-4 rounded-xl bg-[#FF8C00] text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-[#FF8C00]/90 transition-all shadow-[0_10px_30px_rgba(255,140,0,0.2)]"
+                  className="w-full py-4 rounded-xl bg-[#FF9500] text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-[#FF9500]/90 transition-all shadow-[0_10px_30px_rgba(255,149,0,0.2)]"
                 >
                   Guardar Imagen
                 </button>
@@ -3593,14 +3786,14 @@ const FuelFormView = ({
         <div className="flex items-center gap-6">
           <button 
             onClick={onCancel}
-            className="p-4 bg-white/5 text-[#FF8C00] rounded-2xl hover:bg-[#FF8C00]/10 transition-colors"
+            className="p-4 bg-white/5 text-[#FF9500] rounded-2xl hover:bg-[#FF9500]/10 transition-colors"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
             <h1 className="text-3xl font-black text-white tracking-tighter uppercase">Carga de Combustible</h1>
             <div className="flex items-center gap-4 mt-2">
-              <span className="text-xs font-bold text-[#FF8C00] uppercase tracking-widest">{formData.id}</span>
+              <span className="text-xs font-bold text-[#FF9500] uppercase tracking-widest">{formData.id}</span>
               <span className="w-1 h-1 rounded-full bg-white/20" />
               <span className="text-xs font-bold text-white/40 uppercase tracking-widest">{formData.fecha}</span>
             </div>
@@ -3612,7 +3805,7 @@ const FuelFormView = ({
               key={step}
               className={cn(
                 "w-10 h-2 rounded-full transition-all duration-500",
-                level >= step ? "bg-[#FF8C00]" : "bg-white/5"
+                level >= step ? "bg-[#FF9500]" : "bg-white/5"
               )}
             />
           ))}
@@ -3633,8 +3826,8 @@ const FuelFormView = ({
           )}
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center">
-              <Tractor className="w-6 h-6 text-[#FF8C00]" />
+            <div className="w-12 h-12 rounded-2xl bg-[#FF9500]/10 flex items-center justify-center">
+              <Tractor className="w-6 h-6 text-[#FF9500]" />
             </div>
             <h2 className="text-xl font-black text-white uppercase tracking-tight">Nivel 1: Identificación</h2>
           </div>
@@ -3663,7 +3856,7 @@ const FuelFormView = ({
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Tipo de Combustible</p>
-                    <p className="text-sm font-medium text-[#FF8C00]">{formData.tipo_combustible}</p>
+                    <p className="text-sm font-medium text-[#FF9500]">{formData.tipo_combustible}</p>
                   </div>
                 </div>
               )}
@@ -3708,7 +3901,7 @@ const FuelFormView = ({
             <button 
               onClick={() => setLevel(2)}
               disabled={!isLevel1Complete}
-              className="w-full py-6 bg-[#FF8C00] text-black rounded-2xl font-black text-sm hover:bg-[#FF8C00]/90 transition-all uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,140,0,0.2)] disabled:opacity-20"
+              className="w-full py-6 bg-[#FF9500] text-black rounded-2xl font-black text-sm hover:bg-[#FF9500]/90 transition-all uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,149,0,0.2)] disabled:opacity-20"
             >
               Confirmar Identificación
             </button>
@@ -3728,8 +3921,8 @@ const FuelFormView = ({
           )}
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center">
-              <Fuel className="w-6 h-6 text-[#FF8C00]" />
+            <div className="w-12 h-12 rounded-2xl bg-[#FF9500]/10 flex items-center justify-center">
+              <Fuel className="w-6 h-6 text-[#FF9500]" />
             </div>
             <h2 className="text-xl font-black text-white uppercase tracking-tight">Nivel 2: Registro de Carga</h2>
           </div>
@@ -3750,14 +3943,14 @@ const FuelFormView = ({
                     type="number"
                     value={formData.volumen || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, volumen: parseFloat(e.target.value) || 0 }))}
-                    className="w-48 bg-transparent text-7xl font-black text-[#FF8C00] text-center outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-48 bg-transparent text-7xl font-black text-[#FF9500] text-center outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <span className="text-2xl font-black text-white/20">L</span>
                 </div>
 
                 <button 
                   onClick={() => setFormData(prev => ({ ...prev, volumen: prev.volumen + 1 }))}
-                  className="w-20 h-20 rounded-3xl bg-[#FF8C00]/10 flex items-center justify-center text-[#FF8C00] hover:bg-[#FF8C00]/20 transition-all active:scale-90"
+                  className="w-20 h-20 rounded-3xl bg-[#FF9500]/10 flex items-center justify-center text-[#FF9500] hover:bg-[#FF9500]/20 transition-all active:scale-90"
                 >
                   <Plus className="w-8 h-8" />
                 </button>
@@ -3780,7 +3973,7 @@ const FuelFormView = ({
             <button 
               onClick={() => setLevel(3)}
               disabled={!isLevel2Complete}
-              className="w-full py-6 bg-[#FF8C00] text-black rounded-2xl font-black text-sm hover:bg-[#FF8C00]/90 transition-all uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,140,0,0.2)] disabled:opacity-20"
+              className="w-full py-6 bg-[#FF9500] text-black rounded-2xl font-black text-sm hover:bg-[#FF9500]/90 transition-all uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,149,0,0.2)] disabled:opacity-20"
             >
               Confirmar Carga
             </button>
@@ -3800,8 +3993,8 @@ const FuelFormView = ({
           )}
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center">
-              <Calculator className="w-6 h-6 text-[#FF8C00]" />
+            <div className="w-12 h-12 rounded-2xl bg-[#FF9500]/10 flex items-center justify-center">
+              <Calculator className="w-6 h-6 text-[#FF9500]" />
             </div>
             <h2 className="text-xl font-black text-white uppercase tracking-tight">Nivel 3: Cierre y Rendimiento</h2>
           </div>
@@ -3817,11 +4010,11 @@ const FuelFormView = ({
                 unit={formData.tipo === 'Tractor' || formData.tipo === 'Maquinaria Pesada' ? "Hrs" : "Km"}
               />
 
-              <div className="bg-black/60 p-8 rounded-[32px] border border-[#FF8C00]/10 space-y-8">
+              <div className="bg-black/60 p-8 rounded-[32px] border border-[#FF9500]/10 space-y-8">
                 <div>
                   <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Total Recorrido / Horas</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-[#FF8C00]">{formData.total_recorrido}</span>
+                    <span className="text-4xl font-black text-[#FF9500]">{formData.total_recorrido}</span>
                     <span className="text-sm font-bold text-white/40 uppercase">{formData.tipo === 'Tractor' || formData.tipo === 'Maquinaria Pesada' ? 'Hrs' : 'Km'}</span>
                   </div>
                 </div>
@@ -3829,16 +4022,16 @@ const FuelFormView = ({
                 <div className="pt-6 border-t border-white/5">
                   <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-2">Promedio de Rendimiento</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-black text-[#FF8C00] drop-shadow-[0_0_15px_rgba(255,140,0,0.3)]">{formData.rendimiento}</span>
+                    <span className="text-5xl font-black text-[#FF9500] drop-shadow-[0_0_15px_rgba(255,149,0,0.3)]">{formData.rendimiento}</span>
                     <span className="text-sm font-bold text-white/40 uppercase">L / {formData.tipo === 'Tractor' || formData.tipo === 'Maquinaria Pesada' ? 'Hr' : 'Km'}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col justify-center items-center text-center p-8 bg-[#FF8C00]/5 rounded-[32px] border border-[#FF8C00]/10">
-              <div className="w-20 h-20 rounded-full bg-[#FF8C00]/20 flex items-center justify-center mb-6">
-                <CheckCircle2 className="w-10 h-10 text-[#FF8C00]" />
+            <div className="flex flex-col justify-center items-center text-center p-8 bg-[#FF9500]/5 rounded-[32px] border border-[#FF9500]/10">
+              <div className="w-20 h-20 rounded-full bg-[#FF9500]/20 flex items-center justify-center mb-6">
+                <CheckCircle2 className="w-10 h-10 text-[#FF9500]" />
               </div>
               <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Registro Listo</h3>
               <p className="text-sm text-white/40 leading-relaxed">
@@ -3851,7 +4044,7 @@ const FuelFormView = ({
             <button 
               onClick={() => onSave({ ...formData, estado: 'Finalizado', nivel_actual: 3 })}
               disabled={!isLevel3Complete}
-              className="w-full py-6 bg-[#FF8C00] text-black rounded-2xl font-black text-sm hover:bg-[#FF8C00]/90 transition-all uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,140,0,0.2)] disabled:opacity-20"
+              className="w-full py-6 bg-[#FF9500] text-black rounded-2xl font-black text-sm hover:bg-[#FF9500]/90 transition-all uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,149,0,0.2)] disabled:opacity-20"
             >
               Finalizar Registro
             </button>
@@ -3910,7 +4103,7 @@ const FuelListView = ({
         <div className="flex items-center gap-6">
           <button 
             onClick={onGoHome}
-            className="p-3 bg-[#0D0D0D] text-[#FF8C00] rounded-2xl hover:bg-[#FF8C00]/10 transition-colors shadow-lg"
+            className="p-3 bg-[#0D0D0D] text-[#FF9500] rounded-2xl hover:bg-[#FF9500]/10 transition-colors shadow-lg"
             title="Volver al Inicio"
           >
             <Home className="w-6 h-6" />
@@ -3918,7 +4111,7 @@ const FuelListView = ({
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-white">Control de Combustible</h1>
             <div className="flex items-center gap-2 mt-2">
-              <MapPin className="w-4 h-4 text-[#FF8C00]" />
+              <MapPin className="w-4 h-4 text-[#FF9500]" />
               <span className="text-sm font-medium text-white/50 uppercase tracking-wider">Hacienda Puricaure</span>
             </div>
           </div>
@@ -3927,7 +4120,7 @@ const FuelListView = ({
         <div className="flex items-center gap-3">
           <button 
             onClick={onNew}
-            className="flex items-center justify-center gap-2 bg-[#FF8C00] text-black px-6 py-4 rounded-2xl font-bold hover:bg-[#FF8C00]/90 transition-colors shadow-lg shadow-[#FF8C00]/20"
+            className="flex items-center justify-center gap-2 bg-[#FF9500] text-black px-6 py-4 rounded-2xl font-bold hover:bg-[#FF9500]/90 transition-colors shadow-lg shadow-[#FF9500]/20"
           >
             <Plus className="w-5 h-5" />
             Cargar Nuevo Registro
@@ -3940,14 +4133,14 @@ const FuelListView = ({
         {/* Search Bar */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-[#FF8C00]" />
+            <Search className="h-5 w-5 text-[#FF9500]" />
           </div>
           <input
             type="text"
             placeholder="Buscar por ID, Placa o Equipo..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="block w-full pl-12 pr-4 py-4 bg-black border border-[#FF8C00]/50 rounded-2xl text-[#FF8C00] placeholder-white/20 focus:outline-none focus:border-[#FF8C00] focus:ring-1 focus:ring-[#FF8C00] transition-all"
+            className="block w-full pl-12 pr-4 py-4 bg-black border border-[#FF9500]/50 rounded-2xl text-[#FF9500] placeholder-white/20 focus:outline-none focus:border-[#FF9500] focus:ring-1 focus:ring-[#FF9500] transition-all"
           />
         </div>
 
@@ -3959,10 +4152,10 @@ const FuelListView = ({
             className={cn(
               "bg-black border rounded-xl px-5 py-3 text-sm focus:outline-none transition-all appearance-none pr-12 relative",
               filterTime !== 'Todos' 
-                ? "border-[#FF8C00]/50 text-[#FF8C00]" 
+                ? "border-[#FF9500]/50 text-[#FF9500]" 
                 : "border-white/5 text-white/70 hover:border-white/10"
             )}
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF9500'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
           >
             {timeFilters.map(f => <option key={f} value={f}>{f === 'Todos' ? 'Cualquier Fecha' : f}</option>)}
           </select>
@@ -3972,7 +4165,7 @@ const FuelListView = ({
               type="date"
               value={specificDate}
               onChange={(e) => setSpecificDate(e.target.value)}
-              className="bg-black border border-[#FF8C00]/50 rounded-xl px-5 py-3 text-sm text-[#FF8C00] outline-none [color-scheme:dark]"
+              className="bg-black border border-[#FF9500]/50 rounded-xl px-5 py-3 text-sm text-[#FF9500] outline-none [color-scheme:dark]"
             />
           )}
 
@@ -3982,10 +4175,10 @@ const FuelListView = ({
             className={cn(
               "bg-black border rounded-xl px-5 py-3 text-sm focus:outline-none transition-all appearance-none pr-12 relative",
               filterType !== 'Todos' 
-                ? "border-[#FF8C00]/50 text-[#FF8C00]" 
+                ? "border-[#FF9500]/50 text-[#FF9500]" 
                 : "border-white/5 text-white/70 hover:border-white/10"
             )}
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF8C00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF9500'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 16px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
           >
             {equipmentTypes.map(t => <option key={t} value={t}>{t === 'Todos' ? 'Todos los Equipos' : t}</option>)}
           </select>
@@ -4056,17 +4249,17 @@ const FuelListView = ({
                     <div className="flex items-center gap-2">
                       {record.estado === 'Borrador' && (
                         <div className="relative flex h-3 w-3">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF8C00] opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-[#FF8C00] shadow-[0_0_8px_#FF8C00]"></span>
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF9500] opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-[#FF9500] shadow-[0_0_8px_#FF9500]"></span>
                         </div>
                       )}
                       <span className={cn(
                         "font-medium",
-                        record.estado === 'Finalizado' ? "text-emerald-500" : "text-[#FF8C00]"
+                        record.estado === 'Finalizado' ? "text-emerald-500" : "text-[#FF9500]"
                       )}>
                         {record.estado}
                       </span>
-                      <span className="text-[#FF8C00] ml-2 font-mono text-sm">{record.volumen.toFixed(1)}L</span>
+                      <span className="text-[#FF9500] ml-2 font-mono text-sm">{record.volumen.toFixed(1)}L</span>
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-white/20 md:hidden" />
@@ -4096,12 +4289,12 @@ const FuelListView = ({
             >
               <div className="p-8 border-b border-white/5 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center">
-                    <MapPin className="w-6 h-6 text-[#FF8C00]" />
+                  <div className="w-12 h-12 rounded-2xl bg-[#FF9500]/10 flex items-center justify-center">
+                    <MapPin className="w-6 h-6 text-[#FF9500]" />
                   </div>
                   <div>
                     <h3 className="text-2xl font-black text-white tracking-tight uppercase">Mapa de Surtido</h3>
-                    <p className="text-xs font-bold text-[#FF8C00]/60 uppercase tracking-widest">Ubicación Geográfica de Operaciones</p>
+                    <p className="text-xs font-bold text-[#FF9500]/60 uppercase tracking-widest">Ubicación Geográfica de Operaciones</p>
                   </div>
                 </div>
                 <button 
@@ -4115,7 +4308,7 @@ const FuelListView = ({
               <div className="flex-1 relative bg-[#121212] overflow-hidden">
                 {/* Simulated Map Background */}
                 <div className="absolute inset-0 opacity-20 pointer-events-none">
-                  <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#FF8C00 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+                  <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#FF9500 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
                 </div>
                 
                 {/* Map Content */}
@@ -4134,8 +4327,8 @@ const FuelListView = ({
                               className="absolute"
                             >
                               <div className="relative">
-                                <div className="absolute -inset-4 bg-[#FF8C00]/20 rounded-full animate-ping" />
-                                <Fuel className="w-6 h-6 text-[#FF8C00] relative z-10 drop-shadow-[0_0_10px_rgba(255,140,0,0.5)]" />
+                                <div className="absolute -inset-4 bg-[#FF9500]/20 rounded-full animate-ping" />
+                                <Fuel className="w-6 h-6 text-[#FF9500] relative z-10 drop-shadow-[0_0_10px_rgba(255,149,0,0.5)]" />
                               </div>
                             </motion.div>
                           )}
@@ -4149,25 +4342,25 @@ const FuelListView = ({
                 <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end">
                   <div className="bg-[#0D0D0D]/80 backdrop-blur-md p-6 rounded-3xl border border-white/10 shadow-2xl max-w-xs space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-[#FF8C00] animate-pulse" />
+                      <div className="w-2 h-2 rounded-full bg-[#FF9500] animate-pulse" />
                       <p className="text-xs font-black text-white uppercase tracking-widest">Puntos de Surtido Activos</p>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-[10px]">
                         <span className="text-white/40 uppercase">Hacienda Puricaure</span>
-                        <span className="text-[#FF8C00] font-bold">5 Equipos</span>
+                        <span className="text-[#FF9500] font-bold">5 Equipos</span>
                       </div>
                       <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                        <div className="w-[60%] h-full bg-[#FF8C00]" />
+                        <div className="w-[60%] h-full bg-[#FF9500]" />
                       </div>
                     </div>
                   </div>
 
                   <div className="flex gap-2">
-                    <button className="p-4 bg-[#0D0D0D] text-white/60 rounded-2xl border border-white/5 hover:text-[#FF8C00] transition-colors">
+                    <button className="p-4 bg-[#0D0D0D] text-white/60 rounded-2xl border border-white/5 hover:text-[#FF9500] transition-colors">
                       <Sun className="w-5 h-5" />
                     </button>
-                    <button className="p-4 bg-[#0D0D0D] text-white/60 rounded-2xl border border-white/5 hover:text-[#FF8C00] transition-colors">
+                    <button className="p-4 bg-[#0D0D0D] text-white/60 rounded-2xl border border-white/5 hover:text-[#FF9500] transition-colors">
                       <Maximize2 className="w-5 h-5" />
                     </button>
                   </div>
@@ -4181,9 +4374,430 @@ const FuelListView = ({
   );
 };
 
+const MuestreoFormView = ({ 
+  muestreo, 
+  onGoBack, 
+  onSave 
+}: { 
+  muestreo: Muestreo, 
+  onGoBack: () => void, 
+  onSave: (m: Muestreo) => void 
+}) => {
+  const [formData, setFormData] = useState<Muestreo>({ ...muestreo });
+
+  const handleSave = () => {
+    onSave(formData);
+    onGoBack();
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6 pb-24 px-4 pt-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={onGoBack}
+            className="p-2.5 bg-[#0D0D0D] text-[#FF9500] rounded-xl hover:bg-[#FF9500]/10 transition-colors shadow-lg"
+            title="Volver"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight text-white">Detalle de Muestreo</h1>
+              <span className={cn(
+                "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest border",
+                formData.origen === 'Manual' 
+                  ? "bg-blue-500/10 text-blue-400 border-blue-500/20" 
+                  : "bg-purple-500/10 text-purple-400 border-purple-500/20"
+              )}>
+                {formData.origen}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs font-mono text-[#FF9500] font-bold">{formData.id}</span>
+              <span className="text-white/20">•</span>
+              <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Hacienda Puricaure</span>
+            </div>
+          </div>
+        </div>
+
+        <button 
+          onClick={handleSave}
+          className="flex items-center justify-center gap-2 bg-[#FF9500] text-black px-6 py-3 rounded-xl font-bold hover:bg-[#FF9500]/90 transition-colors shadow-lg shadow-[#FF9500]/20 text-sm"
+        >
+          <Save className="w-4 h-4" />
+          Guardar Cambios
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Header Info */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-[#0D0D0D] rounded-3xl p-6 shadow-2xl border border-white/5 space-y-6">
+            <div className="flex items-center gap-3 px-2">
+              <div className="w-8 h-8 rounded-xl bg-[#FF9500]/10 flex items-center justify-center">
+                <ClipboardList className="w-4 h-4 text-[#FF9500]" />
+              </div>
+              <h2 className="text-sm font-bold text-white/90 uppercase tracking-[0.2em]">Información de Cabecera</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-white/40 ml-1">Compra Asociada</label>
+                <div className="flex items-center gap-3 p-4 bg-black border border-white/5 rounded-2xl group hover:border-[#FF9500]/30 transition-all">
+                  <FileText className="w-5 h-5 text-[#FF9500]" />
+                  <span className="text-white font-medium">{formData.compraAsociada || 'N/A'}</span>
+                  {formData.compraAsociada && (
+                    <button className="ml-auto text-[10px] font-bold text-[#FF9500] hover:underline uppercase tracking-widest">
+                      Ver PO
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-white/40 ml-1">Proveedor (Lectura)</label>
+                <div className="p-4 bg-black border border-white/5 rounded-2xl text-white/40 font-medium">
+                  {formData.proveedor || 'No especificado'}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-white/40 ml-1">Lote de Semilla (Lectura)</label>
+                <div className="p-4 bg-black border border-white/5 rounded-2xl text-white/40 font-medium">
+                  {formData.lote || 'No especificado'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Fields */}
+          <div className="bg-[#0D0D0D] rounded-3xl p-6 shadow-2xl border border-white/5 space-y-6">
+            <div className="flex items-center gap-3 px-2">
+              <div className="w-8 h-8 rounded-xl bg-[#FF9500]/10 flex items-center justify-center">
+                <Wrench className="w-4 h-4 text-[#FF9500]" />
+              </div>
+              <h2 className="text-sm font-bold text-white/90 uppercase tracking-[0.2em]">Detalles del Muestreo</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-white/40 ml-1">Actividad</label>
+                <select 
+                  value={formData.actividad}
+                  onChange={(e: any) => setFormData({...formData, actividad: e.target.value})}
+                  className="w-full p-3 bg-black border border-white/10 rounded-xl text-white focus:border-[#FF9500] focus:ring-1 focus:ring-[#FF9500] outline-none transition-all text-sm"
+                >
+                  <option value="Muestreo de Cantidad y Peso">Muestreo de Cantidad y Peso</option>
+                  <option value="Muestreo Inicial">Muestreo Inicial</option>
+                  <option value="Control de Humedad">Control de Humedad</option>
+                  <option value="Control de Calidad">Control de Calidad</option>
+                  <option value="Muestreo de Salida">Muestreo de Salida</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-white/40 ml-1">Operador</label>
+                <input 
+                  type="text"
+                  value={formData.operador}
+                  onChange={(e) => setFormData({...formData, operador: e.target.value})}
+                  placeholder="Nombre del operador..."
+                  className="w-full p-3 bg-black border border-white/10 rounded-xl text-white focus:border-[#FF9500] focus:ring-1 focus:ring-[#FF9500] outline-none transition-all text-sm"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-white/40 ml-1">Observaciones</label>
+                <textarea 
+                  value={formData.observaciones}
+                  onChange={(e) => setFormData({...formData, observaciones: e.target.value})}
+                  placeholder="Notas adicionales..."
+                  rows={3}
+                  className="w-full p-3 bg-black border border-white/10 rounded-xl text-white focus:border-[#FF9500] focus:ring-1 focus:ring-[#FF9500] outline-none transition-all resize-none text-sm"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Status & Actions */}
+        <div className="space-y-6">
+          <div className="bg-[#0D0D0D] rounded-3xl p-6 shadow-2xl border border-white/5 space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-white/40">Estado del Registro</h3>
+            
+            <div className="space-y-2">
+              {(['Por Iniciar', 'Borrador', 'En Proceso', 'Finalizado'] as const).map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setFormData({...formData, estado: status})}
+                  className={cn(
+                    "w-full flex items-center justify-between p-3 rounded-xl border transition-all group",
+                    formData.estado === status 
+                      ? "bg-[#FF9500] border-[#FF9500] text-black" 
+                      : "bg-black border-white/5 text-white/40 hover:border-white/20"
+                  )}
+                >
+                  <span className="font-bold text-[10px] uppercase tracking-widest">{status}</span>
+                  {formData.estado === status ? (
+                    <CheckCircle2 className="w-4 h-4" />
+                  ) : (
+                    <Circle className="w-4 h-4 opacity-20 group-hover:opacity-100" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-[#FF9500]/20 to-transparent p-6 rounded-3xl border border-[#FF9500]/10">
+            <h3 className="text-[#FF9500] font-bold text-xs mb-2">Resumen de Interconexión</h3>
+            <p className="text-white/60 text-[10px] leading-relaxed">
+              Este registro está vinculado a la Orden de Compra <span className="text-white font-mono">{formData.compraAsociada}</span>. 
+              Cualquier cambio en la recepción afectará la visibilidad de este muestreo.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MuestreoListView = ({ 
+  muestreos, 
+  onGoHome, 
+  onNewMuestreo, 
+  onSelectMuestreo 
+}: { 
+  muestreos: Muestreo[], 
+  onGoHome: () => void, 
+  onNewMuestreo: () => void, 
+  onSelectMuestreo: (m: Muestreo) => void 
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterEstado, setFilterEstado] = useState('Todos');
+  const [filterOrigen, setFilterOrigen] = useState('Todos');
+  const [filterProveedor, setFilterProveedor] = useState('Todos');
+
+  const uniqueProveedores = Array.from(new Set(muestreos.map(m => m.proveedor)));
+
+  const filteredMuestreos = muestreos.filter(m => {
+    const matchesSearch = 
+      m.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.lote.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.operador.toLowerCase().includes(searchTerm.toLowerCase());
+      
+    const matchesEstado = filterEstado === 'Todos' || m.estado === filterEstado;
+    const matchesOrigen = filterOrigen === 'Todos' || m.origen === filterOrigen;
+    const matchesProveedor = filterProveedor === 'Todos' || m.proveedor === filterProveedor;
+
+    return matchesSearch && matchesEstado && matchesOrigen && matchesProveedor;
+  });
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6 pb-24 px-4 pt-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={onGoHome}
+            className="p-2.5 bg-[#0D0D0D] text-[#FF9500] rounded-xl hover:bg-[#FF9500]/10 transition-colors shadow-lg"
+            title="Volver al Inicio"
+          >
+            <Home className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Muestreo de Costales</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <MapPin className="w-3.5 h-3.5 text-[#FF9500]" />
+              <span className="text-[10px] font-medium text-white/50 uppercase tracking-wider">Hacienda Puricaure</span>
+            </div>
+          </div>
+        </div>
+        
+        <button 
+          onClick={onNewMuestreo}
+          className="flex items-center justify-center gap-2 bg-[#FF9500] text-black px-5 py-3 rounded-xl text-sm font-bold hover:bg-[#FF9500]/90 transition-colors shadow-lg shadow-[#FF9500]/20"
+        >
+          <Plus className="w-4 h-4" />
+          Nuevo Muestreo
+        </button>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-[#111111] p-4 rounded-2xl shadow-xl border border-white/5 space-y-4">
+        {/* Search Bar */}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-[#FF9500]" />
+          </div>
+          <input
+            type="text"
+            placeholder="Buscar por ID, Lote o Operador..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="block w-full pl-10 pr-4 py-3 bg-black border border-[#FF9500]/50 rounded-xl text-sm text-[#FF9500] placeholder-white/20 focus:outline-none focus:border-[#FF9500] focus:ring-1 focus:ring-[#FF9500] transition-all"
+          />
+        </div>
+
+        {/* Filters */}
+        <div className="grid grid-cols-3 gap-2">
+          <select
+            value={filterEstado}
+            onChange={(e) => setFilterEstado(e.target.value)}
+            className={cn(
+              "bg-black border rounded-lg px-4 py-2 text-xs focus:outline-none transition-all appearance-none pr-10 relative",
+              filterEstado !== 'Todos' 
+                ? "border-[#FF9500]/50 text-[#FF9500]" 
+                : "border-white/5 text-white/70 hover:border-white/10"
+            )}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF9500'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 12px center', backgroundRepeat: 'no-repeat', backgroundSize: '14px' }}
+          >
+            <option value="Todos">Todos los Estados</option>
+            <option value="Por Iniciar">Por Iniciar</option>
+            <option value="Borrador">Borrador</option>
+            <option value="En Proceso">En Proceso</option>
+            <option value="Finalizado">Finalizado</option>
+          </select>
+
+          <select
+            value={filterOrigen}
+            onChange={(e) => setFilterOrigen(e.target.value)}
+            className={cn(
+              "bg-black border rounded-lg px-4 py-2 text-xs focus:outline-none transition-all appearance-none pr-10 relative",
+              filterOrigen !== 'Todos' 
+                ? "border-[#FF9500]/50 text-[#FF9500]" 
+                : "border-white/5 text-white/70 hover:border-white/10"
+            )}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF9500'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 12px center', backgroundRepeat: 'no-repeat', backgroundSize: '14px' }}
+          >
+            <option value="Todos">Todos los Orígenes</option>
+            <option value="Manual">Manual</option>
+            <option value="Automático (por Recepción)">Automático</option>
+          </select>
+
+          <select
+            value={filterProveedor}
+            onChange={(e) => setFilterProveedor(e.target.value)}
+            className={cn(
+              "bg-black border rounded-lg px-4 py-2 text-xs focus:outline-none transition-all appearance-none pr-10 relative",
+              filterProveedor !== 'Todos' 
+                ? "border-[#FF9500]/50 text-[#FF9500]" 
+                : "border-white/5 text-white/70 hover:border-white/10"
+            )}
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF9500'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 12px center', backgroundRepeat: 'no-repeat', backgroundSize: '14px' }}
+          >
+            <option value="Todos">Todos los Proveedores</option>
+            {uniqueProveedores.map(prov => (
+              <option key={prov} value={prov}>{prov}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Table/List */}
+      <div className="bg-[#0D0D0D] rounded-2xl shadow-xl overflow-hidden border border-white/5">
+        {/* Table Header */}
+        <div className="hidden md:grid grid-cols-5 gap-4 px-5 py-3 border-b border-white/5 text-[9px] font-bold text-white/40 uppercase tracking-widest bg-white/[0.02]">
+          <div>ID Muestreo</div>
+          <div>Lote / Sección</div>
+          <div>Compra Asociada</div>
+          <div>Operador</div>
+          <div>Estado</div>
+        </div>
+
+        {/* List Items */}
+        <div className="flex flex-col">
+          {filteredMuestreos.length === 0 ? (
+            <div className="p-10 text-center flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                <Search className="w-6 h-6 text-white/20" />
+              </div>
+              <p className="text-white/60 text-base">No se encontraron muestreos</p>
+            </div>
+          ) : (
+            filteredMuestreos.map((m, index) => (
+              <div 
+                key={m.id}
+                onClick={() => onSelectMuestreo(m)}
+                className={cn(
+                  "grid grid-cols-1 md:grid-cols-5 gap-4 px-5 py-3 cursor-pointer transition-colors duration-200 hover:bg-[#161616] active:bg-[#161616]",
+                  index !== filteredMuestreos.length - 1 && "border-b border-white/5"
+                )}
+              >
+                {/* ID */}
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                    <ClipboardList className="w-3.5 h-3.5 text-white/30" />
+                  </div>
+                  <div>
+                    <span className="md:hidden text-[9px] font-bold text-white/40 uppercase tracking-wider block mb-0.5">ID Muestreo</span>
+                    <span className="font-mono text-[#FF9500] font-bold text-xs">{m.id}</span>
+                  </div>
+                </div>
+
+                {/* Lote */}
+                <div className="flex items-center">
+                  <div>
+                    <span className="md:hidden text-[9px] font-bold text-white/40 uppercase tracking-wider block mb-0.5">Lote / Sección</span>
+                    <span className="text-white/80 text-xs">{m.lote}</span>
+                    <p className="text-[8px] text-white/20 uppercase font-bold tracking-widest mt-0.5">{m.proveedor}</p>
+                  </div>
+                </div>
+
+                {/* Compra Asociada */}
+                <div className="flex items-center">
+                  <div>
+                    <span className="md:hidden text-[9px] font-bold text-white/40 uppercase tracking-wider block mb-0.5">Compra Asociada</span>
+                    <span className="text-white/80 font-mono text-xs">{m.compraAsociada || '---'}</span>
+                  </div>
+                </div>
+
+                {/* Operador */}
+                <div className="flex items-center">
+                  <div>
+                    <span className="md:hidden text-[9px] font-bold text-white/40 uppercase tracking-wider block mb-0.5">Operador</span>
+                    <span className="text-white/80 text-xs">{m.operador || 'Sin asignar'}</span>
+                  </div>
+                </div>
+
+                {/* Estado */}
+                <div className="flex items-center justify-between md:justify-start">
+                  <div>
+                    <span className="md:hidden text-[9px] font-bold text-white/40 uppercase tracking-wider block mb-0.5">Estado</span>
+                    <div className="flex items-center gap-2">
+                      {m.estado === 'En Proceso' && (
+                        <div className="relative flex h-1.5 w-1.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF9500] opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#FF9500]"></span>
+                        </div>
+                      )}
+                      <span className={cn(
+                        "font-bold text-[9px] uppercase tracking-wider",
+                        m.estado === 'Finalizado' ? "text-emerald-500" : 
+                        m.estado === 'En Proceso' ? "text-[#FF9500]" : 
+                        m.estado === 'Por Iniciar' ? "text-purple-400" : "text-white/20"
+                      )}>
+                        {m.estado}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-white/20 md:hidden" />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
-  const [view, setView] = useState<'dashboard' | 'list' | 'form' | 'operation' | 'prep' | 'prep-form' | 'fuel' | 'fuel-form'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'list' | 'form' | 'operation' | 'prep' | 'prep-form' | 'fuel' | 'fuel-form' | 'muestreo'>('dashboard');
   const [isOnline, setIsOnline] = useState(true);
+  const [muestreos, setMuestreos] = useState<Muestreo[]>(MOCK_MUESTREOS);
+  const [selectedMuestreo, setSelectedMuestreo] = useState<Muestreo | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([
     {
       id: 'HPR-FO-PRO-001',
@@ -4285,6 +4899,26 @@ export default function App() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [isSigning, setIsSigning] = useState(false);
 
+  const handleCreateMuestreo = (poId: string, proveedor: string) => {
+    const exists = muestreos.find(m => m.compraAsociada === poId);
+    if (exists) return exists;
+
+    const newId = `HPR-MC-${(muestreos.length + 1).toString().padStart(3, '0')}`;
+    const newM: Muestreo = {
+      id: newId,
+      lote: `LOTE-${poId.split('-')[2] || 'NEW'}`,
+      actividad: 'Muestreo de Cantidad y Peso',
+      operador: '',
+      proveedor: proveedor,
+      estado: 'Por Iniciar',
+      fecha: new Date().toISOString().split('T')[0],
+      compraAsociada: poId,
+      origen: 'Automático (por Recepción)'
+    };
+    setMuestreos(prev => [newM, ...prev]);
+    return newM;
+  };
+
   // --- Handlers ---
 
   const handleNewVehicle = () => {
@@ -4329,6 +4963,13 @@ export default function App() {
       return [...prev, updated];
     });
     setSelectedVehicle(updated);
+
+    // Auto-create sampling if it doesn't exist upon confirmation
+    if (updated.compra) {
+      handleCreateMuestreo(updated.compra, updated.proveedor);
+    }
+    // Redirect to operation view (costales registration)
+    setView('operation');
   };
 
   const handleAddTransbordo = (data: { oldDriver: string, newDriver: string, firma: string }) => {
@@ -4384,8 +5025,8 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen bg-black text-[#FF8C00] font-sans selection:bg-[#FF8C00] selection:text-black overflow-hidden flex flex-col">
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,#FF8C0010,transparent_50%)] pointer-events-none" />
+    <div className="h-screen bg-black text-[#FF9500] font-sans selection:bg-[#FF9500] selection:text-black overflow-hidden flex flex-col">
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_0%,#FF950010,transparent_50%)] pointer-events-none" />
       
       <button
         onClick={() => setIsOnline(!isOnline)}
@@ -4430,6 +5071,10 @@ export default function App() {
                 onConfirmRegistration={handleConfirmRegistration}
                 computedPicking={computedPicking}
                 setIsSigning={setIsSigning}
+                muestreos={muestreos}
+                setMuestreos={setMuestreos}
+                setSelectedMuestreo={setSelectedMuestreo}
+                handleCreateMuestreo={handleCreateMuestreo}
               />
             )}
             {view === 'operation' && (
@@ -4442,6 +5087,8 @@ export default function App() {
                 setDirectValue={setDirectValue}
                 setIsSigning={setIsSigning} 
                 onFinalize={handleFinalize}
+                muestreos={muestreos}
+                setSelectedMuestreo={setSelectedMuestreo}
               />
             )}
             {view === 'prep' && (
@@ -4485,6 +5132,44 @@ export default function App() {
                 onCancel={() => setView('fuel')}
               />
             )}
+            {view === 'muestreo' && (
+              <MuestreoListView 
+                muestreos={muestreos}
+                onGoHome={() => setView('dashboard')}
+                onNewMuestreo={() => {
+                  const newId = `HPR-MC-${(muestreos.length + 1).toString().padStart(3, '0')}`;
+                  const newM: Muestreo = {
+                    id: newId,
+                    lote: '',
+                    actividad: 'Muestreo de Cantidad y Peso',
+                    operador: '',
+                    proveedor: '',
+                    estado: 'Borrador',
+                    fecha: new Date().toISOString().split('T')[0],
+                    origen: 'Manual'
+                  };
+                  setSelectedMuestreo(newM);
+                  setView('muestreo-form');
+                }}
+                onSelectMuestreo={(m) => {
+                  setSelectedMuestreo(m);
+                  setView('muestreo-form');
+                }}
+              />
+            )}
+            {view === 'muestreo-form' && selectedMuestreo && (
+              <MuestreoFormView 
+                muestreo={selectedMuestreo}
+                onGoBack={() => setView('muestreo')}
+                onSave={(updated) => {
+                  setMuestreos(prev => {
+                    const exists = prev.find(m => m.id === updated.id);
+                    if (exists) return prev.map(m => m.id === updated.id ? updated : m);
+                    return [updated, ...prev];
+                  });
+                }}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -4509,11 +5194,11 @@ export default function App() {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 140, 0, 0.1);
+          background: rgba(255, 149, 0, 0.1);
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 140, 0, 0.3);
+          background: rgba(255, 149, 0, 0.3);
         }
       `}</style>
     </div>
